@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Prisma generated client
+backend/src/generated/
+
 # Environment variables
 .env
 .env.*
