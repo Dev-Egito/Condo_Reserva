@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  RESIDENT
+  ADMIN
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(RESIDENT)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  resident Resident?
+}
+
+model Resident {
+  id        String   @id @default(uuid()) @db.Uuid
+  fullName  String
+  cpf       String   @unique
+  phone     String
+  block     String
+  apartment String
+  userId    String?  @unique @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reservations Reservation[]
+
+  @@index([block, apartment])
+}
+
+model LeisureArea {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reservations Reservation[]
+}
+
+model Reservation {
+  id           String            @id @default(uuid()) @db.Uuid
+  residentId   String            @db.Uuid
+  leisureAreaId String            @db.Uuid
+  startAt      DateTime          @db.Timestamptz(3)
+  endAt        DateTime          @db.Timestamptz(3)
+  status       ReservationStatus @default(CONFIRMED)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  resident   Resident   @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  leisureArea LeisureArea @relation(fields: [leisureAreaId], references: [id], onDelete: Restrict)
+
+  @@index([residentId])
+  @@index([leisureAreaId, startAt, endAt])
+}
