@@ -12,6 +12,7 @@ backend/src/generated/
 # Build
 dist/
 build/
+*.tsbuildinfo
 
 # Logs
 *.log
