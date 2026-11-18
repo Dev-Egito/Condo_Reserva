@@ -1,9 +1,18 @@
+import bcrypt from "bcrypt";
+import { prisma } from "../database/prisma";
+import { userRepository } from "../repositories/userRepository";
 import { AppError } from "../utils/appError";
+import { Prisma } from "../generated/prisma/client";
 import {
   residentRepository,
   type CreateResidentData,
   type UpdateResidentData,
 } from "../repositories/residentRepository";
+
+interface CreateResidentWithUserData extends CreateResidentData {
+  email: string;
+  password: string;
+}
 
 function validateFields(data: CreateResidentData) {
   const requiredFields = [
@@ -25,10 +34,28 @@ function validateFields(data: CreateResidentData) {
 }
 
 export const residentService = {
-  async create(data: CreateResidentData) {
+  async create(data: CreateResidentWithUserData) {
     validateFields(data);
 
+    if (
+      typeof data.email !== "string" ||
+      !data.email.trim()
+    ) {
+      throw new AppError("O e-mail é obrigatório.", 400);
+    }
+
+    if (
+      typeof data.password !== "string" ||
+      data.password.length < 8
+    ) {
+      throw new AppError(
+        "A senha deve possuir pelo menos 8 caracteres.",
+        400
+      );
+    }
+
     const cpf = data.cpf.trim();
+    const email = data.email.trim().toLowerCase();
 
     const existingResident = await residentRepository.findByCpf(cpf);
 
@@ -36,13 +63,60 @@ export const residentService = {
       throw new AppError("CPF já cadastrado.", 409);
     }
 
-    return residentRepository.create({
-      fullName: data.fullName.trim(),
-      cpf,
-      phone: data.phone.trim(),
-      block: data.block.trim(),
-      apartment: data.apartment.trim(),
-    });
+    const existingUser = await userRepository.findByEmail(email);
+
+    if (existingUser) {
+      throw new AppError("E-mail já cadastrado.", 409);
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const user = await userRepository.create(
+          {
+            name: data.fullName.trim(),
+            email,
+            passwordHash,
+            role: "RESIDENT",
+          },
+          tx
+        );
+
+        const resident = await residentRepository.create(
+          {
+            fullName: data.fullName.trim(),
+            cpf,
+            phone: data.phone.trim(),
+            block: data.block.trim(),
+            apartment: data.apartment.trim(),
+            userId: user.id,
+          },
+          tx
+        );
+
+        return resident;
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        const target = String(error.meta?.target ?? "");
+
+        if (target.includes("cpf")) {
+          throw new AppError("CPF já cadastrado.", 409);
+        }
+
+        if (target.includes("email")) {
+          throw new AppError("E-mail já cadastrado.", 409);
+        }
+
+        throw new AppError("CPF ou e-mail já cadastrado.", 409);
+      }
+
+      throw error;
+    }
   },
 
   async findAll() {
@@ -113,7 +187,18 @@ export const residentService = {
       }
     }
 
-    return residentRepository.update(id, updatedData);
+    try {
+      return await residentRepository.update(id, updatedData);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new AppError("CPF já cadastrado.", 409);
+      }
+
+      throw error;
+    }
   },
 
   async delete(id: string) {
