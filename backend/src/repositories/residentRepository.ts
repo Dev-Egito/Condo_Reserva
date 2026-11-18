@@ -1,4 +1,7 @@
+import { Prisma, PrismaClient } from "../generated/prisma/client";
 import { prisma } from "../database/prisma";
+
+type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 export interface CreateResidentData {
   fullName: string;
@@ -11,8 +14,11 @@ export interface CreateResidentData {
 export type UpdateResidentData = Partial<CreateResidentData>;
 
 export const residentRepository = {
-  create(data: CreateResidentData) {
-    return prisma.resident.create({
+  create(
+    data: CreateResidentData & { userId?: string },
+    client: PrismaExecutor = prisma
+  ) {
+    return client.resident.create({
       data,
     });
   },
@@ -28,6 +34,12 @@ export const residentRepository = {
   findById(id: string) {
     return prisma.resident.findUnique({
       where: { id },
+    });
+  },
+
+  findByUserId(userId: string) {
+    return prisma.resident.findUnique({
+      where: { userId },
     });
   },
 

@@ -1,4 +1,4 @@
-import { ReservationStatus } from "../generated/prisma/client";
+import { ReservationStatus, Role } from "../generated/prisma/client";
 import { AppError } from "../utils/appError";
 import { residentRepository } from "../repositories/residentRepository";
 import { leisureAreaRepository } from "../repositories/leisureAreaRepository";
@@ -24,9 +24,51 @@ function validatePeriod(startAt: Date, endAt: Date) {
   }
 }
 
+async function validateReservationAccess(
+  reservation: { residentId: string },
+  authenticatedUser: { id: string; role: Role }
+) {
+  if (authenticatedUser.role === Role.ADMIN) {
+    return;
+  }
+
+  const resident = await residentRepository.findByUserId(
+    authenticatedUser.id
+  );
+
+  if (!resident) {
+    throw new AppError("Cadastro de morador não encontrado.", 404);
+  }
+
+  if (reservation.residentId !== resident.id) {
+    throw new AppError(
+      "Você não tem permissão para acessar esta reserva.",
+      403
+    );
+  }
+}
+
 export const reservationService = {
-  async create(data: CreateReservationData) {
-    if (!data.residentId?.trim()) {
+
+  async create(
+    data: CreateReservationData,
+    authenticatedUser: { id: string; role: Role }
+  ) {
+    let residentId = data.residentId;
+
+    if (authenticatedUser.role === Role.RESIDENT) {
+      const resident = await residentRepository.findByUserId(
+        authenticatedUser.id
+      );
+
+      if (!resident) {
+        throw new AppError("Cadastro de morador não encontrado.", 404);
+      }
+
+      residentId = resident.id;
+    }
+
+    if (!residentId?.trim()) {
       throw new AppError("O morador é obrigatório.", 400);
     }
 
@@ -36,7 +78,7 @@ export const reservationService = {
 
     validatePeriod(data.startAt, data.endAt);
 
-    const resident = await residentRepository.findById(data.residentId);
+    const resident = await residentRepository.findById(residentId);
 
     if (!resident) {
       throw new AppError("Morador não encontrado.", 404);
@@ -67,25 +109,37 @@ export const reservationService = {
       );
     }
 
-    return reservationRepository.create(data);
+    return reservationRepository.create({
+      ...data,
+      residentId,
+    });
   },
 
   findAll() {
     return reservationRepository.findAll();
   },
 
-  async findById(id: string) {
+  async findById(
+    id: string,
+    authenticatedUser: { id: string; role: Role }
+  ) {
     const reservation = await reservationRepository.findById(id);
 
     if (!reservation) {
       throw new AppError("Reserva não encontrada.", 404);
     }
 
+    await validateReservationAccess(reservation, authenticatedUser);
+
     return reservation;
   },
 
   async update(id: string, data: UpdateReservationData) {
-    const reservation = await this.findById(id);
+    const reservation = await reservationRepository.findById(id);
+
+    if (!reservation) {
+      throw new AppError("Reserva não encontrada.", 404);
+    }
 
     if (reservation.status === ReservationStatus.CANCELLED) {
       throw new AppError(
@@ -151,8 +205,11 @@ export const reservationService = {
     return reservationRepository.update(id, data);
   },
 
-  async cancel(id: string) {
-    const reservation = await this.findById(id);
+  async cancel(
+    id: string,
+    authenticatedUser: { id: string; role: Role }
+  ) {
+    const reservation = await this.findById(id, authenticatedUser);
 
     if (reservation.status === ReservationStatus.CANCELLED) {
       throw new AppError("Esta reserva já foi cancelada.", 400);

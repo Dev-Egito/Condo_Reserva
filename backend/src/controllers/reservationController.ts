@@ -14,7 +14,10 @@ export const reservationController = {
         endAt: new Date(req.body.endAt),
         };
 
-        const reservation = await reservationService.create(data);
+        const reservation = await reservationService.create(
+          data,
+          req.user!
+        );
 
         return res.status(201).json(reservation);
     } catch (error) {
@@ -40,7 +43,10 @@ export const reservationController = {
     try {
       const { id } = req.params;
 
-      const reservation = await reservationService.findById(id);
+      const reservation = await reservationService.findById(
+        id,
+        req.user!
+      );
 
       return res.status(200).json(reservation);
     } catch (error) {
@@ -82,7 +88,10 @@ export const reservationController = {
     try {
       const { id } = req.params;
 
-      const reservation = await reservationService.cancel(id);
+      const reservation = await reservationService.cancel(
+        id,
+        req.user!
+      );
 
       return res.status(200).json(reservation);
     } catch (error) {
