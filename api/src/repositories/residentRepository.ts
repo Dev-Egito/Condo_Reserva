@@ -7,8 +7,7 @@ export interface CreateResidentData {
   fullName: string;
   cpf: string;
   phone: string;
-  block: string;
-  apartment: string;
+  apartmentId: string;
 }
 
 export type UpdateResidentData = Partial<CreateResidentData>;
@@ -20,6 +19,9 @@ export const residentRepository = {
   ) {
     return client.resident.create({
       data,
+      include: {
+        apartment: true,
+      },
     });
   },
 
@@ -28,18 +30,27 @@ export const residentRepository = {
       orderBy: {
         fullName: "asc",
       },
+      include: {
+        apartment: true,
+      },
     });
   },
 
   findById(id: string) {
     return prisma.resident.findUnique({
       where: { id },
+      include: {
+        apartment: true,
+      },
     });
   },
 
   findByUserId(userId: string) {
     return prisma.resident.findUnique({
       where: { userId },
+      include: {
+        apartment: true,
+      },
     });
   },
 
@@ -53,6 +64,9 @@ export const residentRepository = {
     return prisma.resident.update({
       where: { id },
       data,
+      include: {
+        apartment: true,
+      },
     });
   },
 
