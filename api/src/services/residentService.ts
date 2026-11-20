@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../database/prisma";
 import { userRepository } from "../repositories/userRepository";
+import { apartmentRepository } from "../repositories/apartmentRepository";
 import { AppError } from "../utils/appError";
 import { Prisma } from "../generated/prisma/client";
 import {
@@ -19,8 +20,7 @@ function validateFields(data: CreateResidentData) {
     "fullName",
     "cpf",
     "phone",
-    "block",
-    "apartment",
+    "apartmentId",
   ] as const;
 
   for (const field of requiredFields) {
@@ -56,6 +56,7 @@ export const residentService = {
 
     const cpf = data.cpf.trim();
     const email = data.email.trim().toLowerCase();
+    const apartmentId = data.apartmentId.trim();
 
     const existingResident = await residentRepository.findByCpf(cpf);
 
@@ -67,6 +68,12 @@ export const residentService = {
 
     if (existingUser) {
       throw new AppError("E-mail já cadastrado.", 409);
+    }
+
+    const apartment = await apartmentRepository.findById(apartmentId);
+
+    if (!apartment) {
+      throw new AppError("Apartamento não encontrado.", 404);
     }
 
     const passwordHash = await bcrypt.hash(data.password, 10);
@@ -88,8 +95,7 @@ export const residentService = {
             fullName: data.fullName.trim(),
             cpf,
             phone: data.phone.trim(),
-            block: data.block.trim(),
-            apartment: data.apartment.trim(),
+            apartmentId,
             userId: user.id,
           },
           tx
@@ -151,8 +157,7 @@ export const residentService = {
       "fullName",
       "cpf",
       "phone",
-      "block",
-      "apartment",
+      "apartmentId",
     ] as const;
 
     for (const [field, value] of Object.entries(data)) {
@@ -174,6 +179,16 @@ export const residentService = {
         if (existingResident) {
           throw new AppError("CPF já cadastrado.", 409);
         }
+      }
+    }
+
+    if (data.apartmentId) {
+      const apartment = await apartmentRepository.findById(
+        data.apartmentId.trim()
+      );
+
+      if (!apartment) {
+        throw new AppError("Apartamento não encontrado.", 404);
       }
     }
 
