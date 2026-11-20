@@ -1,5 +1,6 @@
 import express from "express";
 import residentRoutes from "./routes/residentRoutes";
+import apartmentRoutes from "./routes/apartmentRoutes";
 import leisureAreaRoutes from "./routes/leisureAreaRoutes";
 import reservationRoutes from "./routes/reservationRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -12,6 +13,7 @@ app.use(express.json());
 
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
+app.use("/apartments", apartmentRoutes);
 app.use("/residents", residentRoutes);
 app.use("/leisure-areas", leisureAreaRoutes);
 app.use("/reservations", reservationRoutes);
