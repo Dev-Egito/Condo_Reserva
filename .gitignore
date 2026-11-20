@@ -2,7 +2,7 @@
 node_modules/
 
 # Prisma generated client
-backend/src/generated/
+api/src/generated/
 
 # Environment variables
 .env
