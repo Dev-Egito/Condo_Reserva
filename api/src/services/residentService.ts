@@ -15,45 +15,8 @@ interface CreateResidentWithUserData extends CreateResidentData {
   password: string;
 }
 
-function validateFields(data: CreateResidentData) {
-  const requiredFields = [
-    "fullName",
-    "cpf",
-    "phone",
-    "apartmentId",
-  ] as const;
-
-  for (const field of requiredFields) {
-    if (
-      typeof data[field] !== "string" ||
-      !data[field].trim()
-    ) {
-      throw new AppError(`O campo ${field} é obrigatório.`, 400);
-    }
-  }
-}
-
 export const residentService = {
   async create(data: CreateResidentWithUserData) {
-    validateFields(data);
-
-    if (
-      typeof data.email !== "string" ||
-      !data.email.trim()
-    ) {
-      throw new AppError("O e-mail é obrigatório.", 400);
-    }
-
-    if (
-      typeof data.password !== "string" ||
-      data.password.length < 8
-    ) {
-      throw new AppError(
-        "A senha deve possuir pelo menos 8 caracteres.",
-        400
-      );
-    }
-
     const cpf = data.cpf.trim();
     const email = data.email.trim().toLowerCase();
     const apartmentId = data.apartmentId.trim();
@@ -146,30 +109,6 @@ export const residentService = {
       throw new AppError("Morador não encontrado.", 404);
     }
 
-    if (Object.keys(data).length === 0) {
-      throw new AppError(
-        "Informe pelo menos um campo para atualizar.",
-        400
-      );
-    }
-
-    const allowedFields = [
-      "fullName",
-      "cpf",
-      "phone",
-      "apartmentId",
-    ] as const;
-
-    for (const [field, value] of Object.entries(data)) {
-      if (
-        !allowedFields.includes(field as typeof allowedFields[number]) ||
-        typeof value !== "string" ||
-        !value.trim()
-      ) {
-        throw new AppError(`Valor inválido para o campo ${field}.`, 400);
-      }
-    }
-
     if (data.cpf) {
       const cpf = data.cpf.trim();
 
@@ -191,6 +130,13 @@ export const residentService = {
         throw new AppError("Apartamento não encontrado.", 404);
       }
     }
+
+    const allowedFields = [
+      "fullName",
+      "cpf",
+      "phone",
+      "apartmentId",
+    ] as const;
 
     const updatedData: UpdateResidentData = {};
 

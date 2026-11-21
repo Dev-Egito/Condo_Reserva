@@ -1,18 +1,13 @@
 import {
   leisureAreaRepository,
-  CreateLeisureAreaData,
-  UpdateLeisureAreaData,
+  type CreateLeisureAreaData,
+  type UpdateLeisureAreaData,
 } from "../repositories/leisureAreaRepository";
-
 import { AppError } from "../utils/appError";
 
 export const leisureAreaService = {
   async create(data: CreateLeisureAreaData) {
-    const name = data.name?.trim();
-
-    if (!name) {
-      throw new AppError("O nome da área é obrigatório.", 400);
-    }
+    const name = data.name.trim();
 
     return leisureAreaRepository.create({
       ...data,
@@ -38,25 +33,17 @@ export const leisureAreaService = {
   async update(id: string, data: UpdateLeisureAreaData) {
     await this.findById(id);
 
-    if (Object.keys(data).length === 0) {
-      throw new AppError("Informe ao menos um campo para atualizar.", 400);
+    const updatedData: UpdateLeisureAreaData = { ...data };
+
+    if (updatedData.name !== undefined) {
+      updatedData.name = updatedData.name.trim();
     }
 
-    if (data.name !== undefined) {
-      const name = data.name.trim();
-
-      if (!name) {
-        throw new AppError("O nome da área não pode ser vazio.", 400);
-      }
-
-      data.name = name;
+    if (updatedData.description !== undefined) {
+      updatedData.description = updatedData.description?.trim() || null;
     }
 
-    if (data.description !== undefined) {
-      data.description = data.description?.trim() || null;
-    }
-
-    return leisureAreaRepository.update(id, data);
+    return leisureAreaRepository.update(id, updatedData);
   },
 
   async delete(id: string) {
