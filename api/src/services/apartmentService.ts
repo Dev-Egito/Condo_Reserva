@@ -6,20 +6,8 @@ import {
   type UpdateApartmentData,
 } from "../repositories/apartmentRepository";
 
-function validateFields(data: CreateApartmentData) {
-  if (typeof data.block !== "string" || !data.block.trim()) {
-    throw new AppError("O bloco é obrigatório.", 400);
-  }
-
-  if (typeof data.number !== "string" || !data.number.trim()) {
-    throw new AppError("O número do apartamento é obrigatório.", 400);
-  }
-}
-
 export const apartmentService = {
   async create(data: CreateApartmentData) {
-    validateFields(data);
-
     const block = data.block.trim();
     const number = data.number.trim();
 
@@ -71,25 +59,7 @@ export const apartmentService = {
       throw new AppError("Apartamento não encontrado.", 404);
     }
 
-    if (Object.keys(data).length === 0) {
-      throw new AppError(
-        "Informe pelo menos um campo para atualizar.",
-        400
-      );
-    }
-
     const allowedFields = ["block", "number"] as const;
-
-    for (const [field, value] of Object.entries(data)) {
-      if (
-        !allowedFields.includes(field as typeof allowedFields[number]) ||
-        typeof value !== "string" ||
-        !value.trim()
-      ) {
-        throw new AppError(`Valor inválido para o campo ${field}.`, 400);
-      }
-    }
-
     const updatedData: UpdateApartmentData = {};
 
     for (const field of allowedFields) {

@@ -49,7 +49,6 @@ async function validateReservationAccess(
 }
 
 export const reservationService = {
-
   async create(
     data: CreateReservationData,
     authenticatedUser: { id: string; role: Role }
@@ -68,12 +67,8 @@ export const reservationService = {
       residentId = resident.id;
     }
 
-    if (!residentId?.trim()) {
+    if (!residentId) {
       throw new AppError("O morador é obrigatório.", 400);
-    }
-
-    if (!data.leisureAreaId?.trim()) {
-      throw new AppError("A área de lazer é obrigatória.", 400);
     }
 
     validatePeriod(data.startAt, data.endAt);
@@ -148,18 +143,7 @@ export const reservationService = {
       );
     }
 
-    if (Object.keys(data).length === 0) {
-      throw new AppError(
-        "Informe pelo menos um campo para atualizar.",
-        400
-      );
-    }
-
     if (data.residentId !== undefined) {
-      if (!data.residentId.trim()) {
-        throw new AppError("O morador é obrigatório.", 400);
-      }
-
       const resident = await residentRepository.findById(data.residentId);
 
       if (!resident) {
@@ -168,10 +152,6 @@ export const reservationService = {
     }
 
     const leisureAreaId = data.leisureAreaId ?? reservation.leisureAreaId;
-
-    if (data.leisureAreaId !== undefined && !data.leisureAreaId.trim()) {
-      throw new AppError("A área de lazer é obrigatória.", 400);
-    }
 
     const leisureArea = await leisureAreaRepository.findById(leisureAreaId);
 
