@@ -10,17 +10,38 @@ export interface CreateReservationData {
 
 export type UpdateReservationData = Partial<CreateReservationData>;
 
+const reservationIncludes = {
+  leisureArea: true,
+  resident: {
+    include: {
+      apartment: true,
+    },
+  },
+};
+
 export const reservationRepository = {
   create(data: CreateReservationData) {
     return prisma.reservation.create({
       data,
+      include: reservationIncludes,
     });
   },
 
   findAll() {
     return prisma.reservation.findMany({
+      include: reservationIncludes,
       orderBy: {
         startAt: "asc",
+      },
+    });
+  },
+
+  findByResidentId(residentId: string) {
+    return prisma.reservation.findMany({
+      where: { residentId },
+      include: reservationIncludes,
+      orderBy: {
+        startAt: "desc",
       },
     });
   },
@@ -28,6 +49,7 @@ export const reservationRepository = {
   findById(id: string) {
     return prisma.reservation.findUnique({
       where: { id },
+      include: reservationIncludes,
     });
   },
 
@@ -60,6 +82,7 @@ export const reservationRepository = {
     return prisma.reservation.update({
       where: { id },
       data,
+      include: reservationIncludes,
     });
   },
 
@@ -69,6 +92,7 @@ export const reservationRepository = {
       data: {
         status: ReservationStatus.CANCELLED,
       },
+      include: reservationIncludes,
     });
   },
 };

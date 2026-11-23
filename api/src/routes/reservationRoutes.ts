@@ -31,6 +31,12 @@ reservationRoutes.get(
 );
 
 reservationRoutes.get(
+  "/me",
+  roleMiddleware(Role.ADMIN, Role.RESIDENT),
+  reservationController.findMyReservations
+);
+
+reservationRoutes.get(
   "/:id",
   roleMiddleware(Role.ADMIN, Role.RESIDENT),
   validateParams(idParamSchema),

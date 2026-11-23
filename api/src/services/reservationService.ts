@@ -22,6 +22,12 @@ function validatePeriod(startAt: Date, endAt: Date) {
       400
     );
   }
+
+  // Permitir tolerância de 2 minutos caso o usuário selecione o horário imediatamente atual
+  const now = new Date(Date.now() - 2 * 60 * 1000);
+  if (startAt < now) {
+    throw new AppError("Não é permitido agendar reservas em datas ou horários passados.", 400);
+  }
 }
 
 async function validateReservationAccess(
@@ -112,6 +118,22 @@ export const reservationService = {
 
   findAll() {
     return reservationRepository.findAll();
+  },
+
+  async findMyReservations(authenticatedUser: { id: string; role: Role }) {
+    if (authenticatedUser.role === Role.ADMIN) {
+      return reservationRepository.findAll();
+    }
+
+    const resident = await residentRepository.findByUserId(
+      authenticatedUser.id
+    );
+
+    if (!resident) {
+      throw new AppError("Cadastro de morador não encontrado.", 404);
+    }
+
+    return reservationRepository.findByResidentId(resident.id);
   },
 
   async findById(
