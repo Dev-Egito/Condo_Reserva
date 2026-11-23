@@ -98,4 +98,20 @@ export const reservationController = {
       return next(error);
     }
   },
+
+  async delete(
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { id } = req.params;
+
+      await reservationService.delete(id);
+
+      return res.status(204).send();
+    } catch (error) {
+      return next(error);
+    }
+  },
 };

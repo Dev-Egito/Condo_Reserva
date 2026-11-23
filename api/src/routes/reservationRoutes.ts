@@ -212,4 +212,39 @@ reservationRoutes.patch(
   reservationController.cancel
 );
 
+/**
+ * @openapi
+ * /reservations/{id}:
+ *   delete:
+ *     summary: Exclui uma reserva fisicamente
+ *     description: Operação exclusiva para ADMIN. Remove permanentemente o registro de reserva.
+ *     tags: [Reservas]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       204:
+ *         description: Reserva excluída com sucesso
+ *       400:
+ *         description: ID inválido
+ *       401:
+ *         description: Usuário não autenticado
+ *       403:
+ *         description: Acesso permitido somente ao ADMIN
+ *       404:
+ *         description: Reserva não encontrada
+ */
+reservationRoutes.delete(
+  "/:id",
+  roleMiddleware(Role.ADMIN),
+  validateParams(idParamSchema),
+  reservationController.delete
+);
+
 export default reservationRoutes;

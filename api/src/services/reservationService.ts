@@ -16,6 +16,13 @@ function validatePeriod(startAt: Date, endAt: Date) {
     throw new AppError("Informe datas válidas para a reserva.", 400);
   }
 
+  if (startAt < new Date()) {
+    throw new AppError(
+      "A data inicial da reserva não pode estar no passado.",
+      400
+    );
+  }
+
   if (startAt >= endAt) {
     throw new AppError(
       "A data inicial deve ser anterior à data final.",
@@ -196,5 +203,15 @@ export const reservationService = {
     }
 
     return reservationRepository.cancel(id);
+  },
+
+  async delete(id: string) {
+    const reservation = await reservationRepository.findById(id);
+
+    if (!reservation) {
+      throw new AppError("Reserva não encontrada.", 404);
+    }
+
+    return reservationRepository.delete(id);
   },
 };
