@@ -1,3 +1,4 @@
+import { Prisma } from "../generated/prisma/client";
 import {
   leisureAreaRepository,
   type CreateLeisureAreaData,
@@ -49,6 +50,20 @@ export const leisureAreaService = {
   async delete(id: string) {
     await this.findById(id);
 
-    return leisureAreaRepository.delete(id);
+    try {
+      return await leisureAreaRepository.delete(id);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2003"
+      ) {
+        throw new AppError(
+          "Não é possível excluir uma área de lazer que possui reservas vinculadas.",
+          409
+        );
+      }
+
+      throw error;
+    }
   },
 };

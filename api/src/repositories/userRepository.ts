@@ -49,4 +49,10 @@ export const userRepository = {
       data: { passwordHash },
     });
   },
+
+  delete(id: string, client: PrismaExecutor = prisma) {
+    return client.user.delete({
+      where: { id },
+    });
+  },
 };

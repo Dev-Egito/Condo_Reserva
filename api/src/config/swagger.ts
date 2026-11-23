@@ -372,6 +372,18 @@ const swaggerOptions: swaggerJsdoc.Options = {
 
                 ReservationResponse: {
                     type: "object",
+                    required: [
+                        "id",
+                        "residentId",
+                        "leisureAreaId",
+                        "startAt",
+                        "endAt",
+                        "status",
+                        "createdAt",
+                        "updatedAt",
+                        "resident",
+                        "leisureArea",
+                    ],
                     properties: {
                         id: { type: "string", format: "uuid" },
                         residentId: { type: "string", format: "uuid" },
@@ -381,6 +393,26 @@ const swaggerOptions: swaggerJsdoc.Options = {
                         status: { $ref: "#/components/schemas/ReservationStatus" },
                         createdAt: { type: "string", format: "date-time" },
                         updatedAt: { type: "string", format: "date-time" },
+                        resident: {
+                            type: "object",
+                            required: ["fullName"],
+                            properties: {
+                                fullName: {
+                                    type: "string",
+                                    example: "João da Silva",
+                                },
+                            },
+                        },
+                        leisureArea: {
+                            type: "object",
+                            required: ["name"],
+                            properties: {
+                                name: {
+                                    type: "string",
+                                    example: "Piscina",
+                                },
+                            },
+                        },
                     },
                 },
             },

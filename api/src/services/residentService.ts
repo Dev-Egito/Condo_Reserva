@@ -169,6 +169,26 @@ export const residentService = {
       throw new AppError("Morador não encontrado.", 404);
     }
 
-    return residentRepository.delete(id);
+    try {
+      await prisma.$transaction(async (tx) => {
+        await residentRepository.delete(id, tx);
+
+        if (resident.userId) {
+          await userRepository.delete(resident.userId, tx);
+        }
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2003"
+      ) {
+        throw new AppError(
+          "Não é possível excluir um morador que possui reservas vinculadas.",
+          409
+        );
+      }
+
+      throw error;
+    }
   },
 };

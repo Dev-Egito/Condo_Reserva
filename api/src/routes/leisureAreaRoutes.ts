@@ -185,6 +185,8 @@ leisureAreaRoutes.put(
  *         description: Acesso permitido somente ao ADMIN
  *       404:
  *         description: Área de lazer não encontrada
+ *       409:
+ *         description: Não é possível excluir uma área de lazer que possui reservas vinculadas
  */
 leisureAreaRoutes.delete(
   "/:id",
