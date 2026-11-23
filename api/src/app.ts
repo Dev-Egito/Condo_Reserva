@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import residentRoutes from "./routes/residentRoutes";
 import apartmentRoutes from "./routes/apartmentRoutes";
 import leisureAreaRoutes from "./routes/leisureAreaRoutes";
@@ -11,6 +12,7 @@ import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 app.use("/auth", authRoutes);
