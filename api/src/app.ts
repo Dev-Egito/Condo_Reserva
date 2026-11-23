@@ -5,6 +5,8 @@ import leisureAreaRoutes from "./routes/leisureAreaRoutes";
 import reservationRoutes from "./routes/reservationRoutes";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger";
 import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
@@ -17,6 +19,8 @@ app.use("/apartments", apartmentRoutes);
 app.use("/residents", residentRoutes);
 app.use("/leisure-areas", leisureAreaRoutes);
 app.use("/reservations", reservationRoutes);
+
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(errorHandler);
 
