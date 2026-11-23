@@ -19,6 +19,18 @@ export const reservationRepository = {
 
   findAll() {
     return prisma.reservation.findMany({
+      include: {
+        resident: {
+          select: {
+            fullName: true,
+          },
+        },
+        leisureArea: {
+          select: {
+            name: true,
+          },
+        },
+      },
       orderBy: {
         startAt: "asc",
       },
