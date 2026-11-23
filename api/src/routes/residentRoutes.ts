@@ -279,6 +279,12 @@ residentRoutes.put(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       409:
+ *         description: Não é possível excluir um morador que possui reservas vinculadas.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 residentRoutes.delete(
   "/:id",

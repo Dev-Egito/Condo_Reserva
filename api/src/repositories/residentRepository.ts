@@ -70,8 +70,8 @@ export const residentRepository = {
     });
   },
 
-  delete(id: string) {
-    return prisma.resident.delete({
+  delete(id: string, client: PrismaExecutor = prisma) {
+    return client.resident.delete({
       where: { id },
     });
   },
