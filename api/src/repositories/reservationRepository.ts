@@ -14,6 +14,12 @@ const reservationInclude = {
   resident: {
     select: {
       fullName: true,
+      apartment: {
+        select: {
+          block: true,
+          number: true,
+        },
+      },
     },
   },
   leisureArea: {
@@ -36,6 +42,16 @@ export const reservationRepository = {
       include: reservationInclude,
       orderBy: {
         startAt: "asc",
+      },
+    });
+  },
+
+  findByResidentId(residentId: string) {
+    return prisma.reservation.findMany({
+      where: { residentId },
+      include: reservationInclude,
+      orderBy: {
+        startAt: "desc",
       },
     });
   },

@@ -88,6 +88,35 @@ reservationRoutes.get(
 
 /**
  * @openapi
+ * /reservations/me:
+ *   get:
+ *     summary: Lista as reservas do morador autenticado
+ *     description: Retorna as reservas associadas ao morador autenticado. ADMIN recebe todas as reservas.
+ *     tags: [Reservas]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de reservas do morador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ReservationResponse'
+ *       401:
+ *         description: Usuário não autenticado
+ *       404:
+ *         description: Cadastro de morador não encontrado
+ */
+reservationRoutes.get(
+  "/me",
+  roleMiddleware(Role.ADMIN, Role.RESIDENT),
+  reservationController.findMyReservations
+);
+
+/**
+ * @openapi
  * /reservations/{id}:
  *   get:
  *     summary: Busca uma reserva pelo ID
