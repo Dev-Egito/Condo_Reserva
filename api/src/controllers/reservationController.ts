@@ -35,6 +35,16 @@ export const reservationController = {
     }
   },
 
+  async findMyReservations(req: Request, res: Response, next: NextFunction) {
+    try {
+      const reservations = await reservationService.findMyReservations(req.user!);
+
+      return res.status(200).json(reservations);
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async findById(
     req: Request<{ id: string }>,
     res: Response,

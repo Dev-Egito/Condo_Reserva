@@ -121,6 +121,22 @@ export const reservationService = {
     return reservationRepository.findAll();
   },
 
+  async findMyReservations(authenticatedUser: { id: string; role: Role }) {
+    if (authenticatedUser.role === Role.ADMIN) {
+      return reservationRepository.findAll();
+    }
+
+    const resident = await residentRepository.findByUserId(
+      authenticatedUser.id
+    );
+
+    if (!resident) {
+      throw new AppError("Cadastro de morador não encontrado.", 404);
+    }
+
+    return reservationRepository.findByResidentId(resident.id);
+  },
+
   async findById(
     id: string,
     authenticatedUser: { id: string; role: Role }
