@@ -1,7 +1,7 @@
 # CondoReserva
 
 > 🎥 **Vídeo da Apresentação do Projeto:**
-> [Clique aqui para assistir ao vídeo no YouTube](COLOQUE_O_LINK_DO_SEU_VIDEO_AQUI)
+> [Clique aqui para assistir ao vídeo no YouTube]((https://youtu.be/kStc_BUvDMs))
 > *(Link não listado ou Google Drive com permissão pública)*
 
 ---
