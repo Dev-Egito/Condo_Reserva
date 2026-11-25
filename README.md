@@ -8,11 +8,9 @@
 ## 👥 Integrantes da Equipe
 
 | Nome Completo | RGM | Atribuição / O que fez no projeto |
-| :--- | :--- | :--- |
-| **[Nome do Integrante 1]** | `[RGM 1]` | Modelagem relacional no Prisma, Migrations, Seed do banco e Swagger. |
-| **[Nome do Integrante 2]** | `[RGM 2]` | Frontend React (rotas protegidas, painel de administração e morador). |
-| **[Nome do Integrante 3]** | `[RGM 3]` | Pacote compartilhado Zod (`@condoreserva/shared`) e integração Axios. |
-| **[Nome do Integrante 4]** | `[RGM 4]` | Testes de validação, tratamento de erros e segurança com bcrypt e JWT. |
+| **Jonathan Batista Santos** | `46013989` | Modelagem relacional no Prisma, Migrations, Seed do banco e Swagger. |
+| **Matheus Henrique do Egito Barbosa** | `42930979` | Frontend React (rotas protegidas, painel de administração e morador). |
+| **Fernando Augusto Lustoza Figueirôa** | `42266491` | Pacote compartilhado Zod (`shared`) e integração Axios. |
 
 ---
 
@@ -108,8 +106,8 @@ Em um terminal (na raiz do projeto):
 ```bash
 npm run dev:api
 ```
-*API rodando em:* `http://localhost:3000`  
-*Documentação Swagger em:* `http://localhost:3000/docs/`
+*API rodando em:* `http://localhost:3001`  
+*Documentação Swagger em:* `http://localhost:3001/docs/`
 
 Em outro terminal (na raiz do projeto):
 ```bash

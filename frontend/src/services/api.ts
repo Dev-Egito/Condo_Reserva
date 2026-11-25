@@ -4,7 +4,7 @@ export const TOKEN_STORAGE_KEY = "@CondoReserva:token";
 export const USER_STORAGE_KEY = "@CondoReserva:user";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001",
 });
 
 // Interceptor para adicionar o token JWT em todas as requisições autenticadas

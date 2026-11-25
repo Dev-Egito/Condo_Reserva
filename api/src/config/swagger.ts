@@ -1,6 +1,8 @@
 import path from "node:path";
 import swaggerJsdoc from "swagger-jsdoc";
 
+const port = process.env.PORT || "3001";
+
 const swaggerOptions: swaggerJsdoc.Options = {
     definition: {
         openapi: "3.0.3",
@@ -14,7 +16,7 @@ const swaggerOptions: swaggerJsdoc.Options = {
 
         servers: [
             {
-                url: "http://localhost:3000",
+                url: `http://localhost:${port}`,
                 description: "Servidor local",
             },
         ],
@@ -150,6 +152,21 @@ const swaggerOptions: swaggerJsdoc.Options = {
                     },
                 },
 
+                ApartmentRequest: {
+                    type: "object",
+                    required: ["block", "number"],
+                    properties: {
+                        block: {
+                            type: "string",
+                            example: "A",
+                        },
+                        number: {
+                            type: "string",
+                            example: "101",
+                        },
+                    },
+                },
+
                 ApartmentUpdateRequest: {
                     type: "object",
                     minProperties: 1,
@@ -165,7 +182,7 @@ const swaggerOptions: swaggerJsdoc.Options = {
                     },
                 },
 
-                ResidentRequest: {
+                CreateResidentRequest: {
                     type: "object",
                     required: ["fullName", "cpf", "phone", "apartmentId", "email", "password"],
                     properties: {
