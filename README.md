@@ -1,8 +1,6 @@
 # CondoReserva
 
-> 🎥 **Vídeo da Apresentação do Projeto:**
-> [Clique aqui para assistir ao vídeo no YouTube]((https://youtu.be/kStc_BUvDMs))
-> *(Link não listado ou Google Drive com permissão pública)*
+> 🎥 https://youtu.be/kStc_BUvDMs
 
 ---
 
