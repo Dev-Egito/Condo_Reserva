@@ -1,6 +1,6 @@
 # CondoReserva
 
-> 🎥 https://youtu.be/kStc_BUvDMs
+> 🎥 Link do video no Youtube:https://youtu.be/kStc_BUvDMs
 
 ---
 
