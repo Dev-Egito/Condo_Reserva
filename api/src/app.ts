@@ -12,8 +12,18 @@ import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
 
+app.set("json spaces", 2);
+
 app.use(cors());
 app.use(express.json());
+
+app.get("/", (_req, res) => {
+    res.status(200).json({
+      message: "API CondoReserva funcionando!",
+      status: "online",
+      docs: "/docs/",
+    });
+  });
 
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);

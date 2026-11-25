@@ -1,13 +1,15 @@
 # CondoReserva
 
-> 🎥 **Vídeo da Apresentação do Projeto:**  
-> **[Clique aqui para assistir ao vídeo no YouTube](COLOQUE_O_LINK_DO_SEU_VIDEO_AQUI)** *(Link não listado ou Google Drive com permissão pública)*
+> 🎥 **Vídeo da Apresentação do Projeto:**
+> [Clique aqui para assistir ao vídeo no YouTube](COLOQUE_O_LINK_DO_SEU_VIDEO_AQUI)
+> *(Link não listado ou Google Drive com permissão pública)*
 
 ---
 
 ## 👥 Integrantes da Equipe
 
 | Nome Completo | RGM | Atribuição / O que fez no projeto |
+|---|---|---|
 | **Jonathan Batista Santos** | `46013989` | Modelagem relacional no Prisma, Migrations, Seed do banco e Swagger. |
 | **Matheus Henrique do Egito Barbosa** | `42930979` | Frontend React (rotas protegidas, painel de administração e morador). |
 | **Fernando Augusto Lustoza Figueirôa** | `42266491` | Pacote compartilhado Zod (`shared`) e integração Axios. |
@@ -21,20 +23,24 @@ O **CondoReserva** é um sistema web full stack para gestão de condomínios res
 ### Tabelas e Relacionamentos no Banco (`schema.prisma`):
 
 1. **`User` (Tabela de Login do Sistema):**
-   - Campos: `id`, `name`, `email` (`@unique`), `passwordHash`, `role` (`ADMIN` \| `RESIDENT`), `createdAt`, `updatedAt`.
+   - Campos: `id`, `name`, `email` (`@unique`), `passwordHash`, `role` (`ADMIN` | `RESIDENT`), `createdAt`, `updatedAt`.
    - Senhas criptografadas com `bcrypt`.
+
 2. **`Apartment` (Unidade Habitacional):**
    - Campos: `id`, `block`, `number`, `createdAt`, `updatedAt`.
    - Restrição: `@@unique([block, number])` — impede duplicidade de número no mesmo bloco.
+
 3. **`Resident` (Morador do Condomínio):**
    - Campos: `id`, `fullName`, `cpf` (`@unique`), `phone`, `apartmentId`, `userId` (`@unique`).
    - Relações:
      - `apartmentId → Apartment.id` (`onDelete: Restrict`)
      - `userId → User.id` (`onDelete: SetNull`)
+
 4. **`LeisureArea` (Áreas de Lazer):**
    - Campos: `id`, `name`, `description`, `active` (`Boolean`), `createdAt`, `updatedAt`.
+
 5. **`Reservation` (Tabela ligada a duas outras - Consulta/Agendamento):**
-   - Campos: `id`, `residentId`, `leisureAreaId`, `startAt`, `endAt`, `status` (`CONFIRMED` \| `CANCELLED`), `createdAt`, `updatedAt`.
+   - Campos: `id`, `residentId`, `leisureAreaId`, `startAt`, `endAt`, `status` (`CONFIRMED` | `CANCELLED`), `createdAt`, `updatedAt`.
    - Relações:
      - `residentId → Resident.id` (`onDelete: Restrict`)
      - `leisureAreaId → LeisureArea.id` (`onDelete: Restrict`)
@@ -44,102 +50,137 @@ O **CondoReserva** é um sistema web full stack para gestão de condomínios res
 
 ## 🔑 Credenciais do Seed para Acesso ao Sistema
 
-O banco de dados já vem populado pelo `seed.ts` com as seguintes contas prontas para teste:
+O banco de dados pode ser populado pelo `seed.ts` com as seguintes contas para teste:
 
 | Perfil | E-mail | Senha | Destino após login |
-| :--- | :--- | :--- | :--- |
+|---|---|---|---|
 | **Administrador** | `admin@condoreserva.com` | `12345678` | Painel Administrativo (`/admin`) |
 | **Morador 1** | `joao.silva@condoreserva.com` | `morador123` | Painel do Morador (`/dashboard`) |
 | **Morador 2** | `maria.oliveira@condoreserva.com` | `morador123` | Painel do Morador (`/dashboard`) |
 
 ---
 
-## 🚀 Como Rodar o Projeto do Zero (Passo a Passo)
+## 🚀 Como Rodar o Projeto
 
 ### 1. Pré-requisitos
-- **Node.js** (v18+) e **npm**
-- **Docker** e **Docker Desktop** em execução
 
-### 2. Clonar o repositório e instalar dependências
-Na raiz do projeto clonado:
+- Docker
+- Docker Compose
+- Docker em execução
+
+### 2. Clonar o repositório
+
 ```bash
 git clone <URL_DO_REPOSITORIO>
 cd Condo_Reserva
-npm install
 ```
-*(O comando `npm install` na raiz instala automaticamente as dependências de todos os 3 pacotes: `shared`, `api` e `frontend`).*
 
-### 3. Subir o Banco de Dados PostgreSQL no Docker
-```bash
-docker compose up -d
-```
-*(O PostgreSQL estará rodando no container mapeado para a porta `5433`).*
+### 3. Configurar as variáveis de ambiente
 
-### 4. Configurar as variáveis de ambiente da API
-Copie o arquivo de exemplo para criar o `.env`:
+#### API
+
+Copie o arquivo de exemplo:
+
 ```bash
 cp api/.env.example api/.env
 ```
-*(No Windows PowerShell, pode usar `Copy-Item api/.env.example api/.env`).*
 
-O arquivo `api/.env` já vem pré-configurado para a porta `5433`:
-```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5433/condo_reserva"
-JWT_SECRET="67823a71c2309cb9fe3bf73348c217b3923f8db124a1eef350bd88bbae07a2e5"
-ADMIN_NAME="Administrador"
-ADMIN_EMAIL="admin@condoreserva.com"
-ADMIN_PASSWORD="12345678"
-```
+O arquivo `api/.env` contém as variáveis de ambiente utilizadas pela API e fica fora da imagem Docker.
 
-### 5. Executar as Migrations e o Seed do Banco
-Na pasta da API:
+#### Configuração do Docker
+
+Copie o arquivo de exemplo da raiz:
+
 ```bash
-cd api
-npx prisma migrate dev
-npm run seed
-cd ..
+cp .env.example .env
 ```
 
-### 6. Executar a Aplicação
+O arquivo `.env` da raiz configura as variáveis utilizadas pelo Docker Compose, incluindo as credenciais e o nome do banco de dados.
 
-Em um terminal (na raiz do projeto):
+A configuração de conexão com o banco de dados é diferente dependendo do ambiente:
+
+- **No host:** PostgreSQL acessível pela porta `5433`.
+- **Dentro da API containerizada:** PostgreSQL acessível pelo hostname `postgres`, na porta `5432`.
+
+O Docker Compose configura automaticamente a URL interna da conexão com o banco de dados para a API.
+
+### 4. Subir o ambiente de desenvolvimento
+
+Na raiz do projeto, execute:
+
 ```bash
-npm run dev:api
+docker compose up --build
 ```
-*API rodando em:* `http://localhost:3001`  
-*Documentação Swagger em:* `http://localhost:3001/docs/`
 
-Em outro terminal (na raiz do projeto):
+O Compose:
+
+- Inicializa o PostgreSQL.
+- Aguarda o banco estar disponível por meio do healthcheck.
+- Gera o Prisma Client.
+- Aplica as migrations existentes com `prisma migrate deploy`.
+- Inicia o backend.
+- Inicia o frontend.
+
+O seed não é executado automaticamente.
+
+### 5. Acessar os serviços
+
+| Serviço | Endereço |
+|---|---|
+| Aplicação Web | [http://localhost:5173](http://localhost:5173) |
+| API | [http://localhost:3001](http://localhost:3001) |
+| Swagger | [http://localhost:3001/docs/](http://localhost:3001/docs/) |
+| PostgreSQL (host) | `localhost:5433` |
+
+### 6. Popular o banco de dados, quando necessário
+
+Com os containers em execução, abra outro terminal na raiz do projeto e execute:
+
 ```bash
-npm run dev:frontend
+docker compose exec api npm run seed --workspace=api
 ```
-*Aplicação Web rodando em:* `http://localhost:5173`
+
+Esse comando executa o seed manualmente, populando o banco de dados com os registros necessários para testes.
+
+### 7. Encerrar os containers
+
+Para encerrar os serviços sem remover os dados do banco:
+
+```bash
+docker compose down
+```
+
+O volume persistente do PostgreSQL é mantido, permitindo que os dados continuem disponíveis quando os containers forem iniciados novamente.
 
 ---
 
 ## 🛠️ Validação dos Builds
 
 Para certificar que não há erros de compilação ou TypeScript:
+
 ```bash
 npm run build -w api
 npm run build -w frontend
 ```
 
-Ambos terminam com sucesso e **0 erros** de compilação.
+Ambos terminam com sucesso quando não há erros de compilação.
 
 ---
 
 ## 📖 Funcionalidades Implementadas
 
 ### Backend (`api`)
+
 - Arquitetura em 4 camadas: `routes → controllers → services → repositories`.
 - CRUD completo das 4 tabelas de domínio (`Apartment`, `Resident`, `LeisureArea`, `Reservation`).
 - Autenticação e auto-cadastro de morador com `bcrypt` (senha nunca exposta nas respostas).
 - Validação com **Zod** em todo `POST` e `PUT` através de middleware centralizado `validateBody`.
 - Tratamento de conflito de chave única (`P2002` tratado com status `409` e mensagem clara).
 - Documentação interativa via **Swagger** em `/docs`.
+- Gerenciamento de reservas, incluindo criação, edição, cancelamento e validação de conflitos de horários.
 
 ### Frontend (`frontend`)
+
 - Telas de **Login** e **Cadastro de Morador** validadas antes do envio usando `safeParse` dos schemas do `shared`.
 - Painel Administrativo com abas para cada uma das 4 tabelas:
   - Listagem dos registros com `useEffect`.
@@ -148,3 +189,84 @@ Ambos terminam com sucesso e **0 erros** de compilação.
 - Seleção de chaves estrangeiras via `<select>` dinâmico (escolha de apartamento e área de lazer).
 - **Busca por texto em tempo real** usando `.filter()` em todas as tabelas.
 - Cliente **Axios** centralizado com interceptor para injeção automática de `Authorization: Bearer <token>`.
+- Rotas protegidas de acordo com o perfil de acesso.
+- Painel do morador para gerenciamento e consulta de reservas.
+
+---
+
+## 🐳 Ambiente Docker de Desenvolvimento
+
+O projeto possui um ambiente de desenvolvimento containerizado utilizando Docker Compose.
+
+### Containers
+
+- **PostgreSQL:** banco de dados relacional.
+- **API:** backend Node.js com TypeScript, Express e Prisma.
+- **Frontend:** aplicação React com Vite.
+
+### Persistência
+
+O banco de dados utiliza um volume Docker externo para persistência.
+
+Os containers podem ser encerrados e recriados sem que os dados do banco sejam apagados, desde que o volume persistente não seja removido.
+
+### Configurações
+
+- PostgreSQL: porta `5433` no host e `5432` internamente.
+- API: porta `3001`.
+- Frontend: porta `5173`.
+- Prisma migrations aplicadas automaticamente na inicialização da API.
+- Seed executado manualmente.
+
+### Comandos úteis
+
+Subir o ambiente:
+
+```bash
+docker compose up --build
+```
+
+Subir em segundo plano:
+
+```bash
+docker compose up --build -d
+```
+
+Visualizar logs:
+
+```bash
+docker compose logs -f
+```
+
+Visualizar logs da API:
+
+```bash
+docker compose logs -f api
+```
+
+Visualizar logs do banco:
+
+```bash
+docker compose logs -f postgres
+```
+
+Encerrar o ambiente:
+
+```bash
+docker compose down
+```
+
+---
+
+## 📌 Observações
+
+- Não execute `docker compose down -v`, pois esse comando remove os volumes e pode apagar os dados persistidos.
+- As migrations são aplicadas automaticamente na inicialização da API.
+- O seed deve ser executado manualmente.
+- O arquivo `api/.env` não deve ser versionado.
+- O arquivo `.env` da raiz não deve ser versionado.
+- Os arquivos `.env.example` são disponibilizados para facilitar a configuração do ambiente.
+
+---
+
+**CondoReserva — Sistema de gerenciamento e reserva de áreas de lazer condominiais.**
