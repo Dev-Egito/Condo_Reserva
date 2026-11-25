@@ -1,5 +1,5 @@
 import { api } from "./api";
-import { Resident } from "../types/models";
+import { Resident, Apartment } from "../types/models";
 
 export interface CreateResidentPayload {
   fullName: string;
@@ -9,6 +9,8 @@ export interface CreateResidentPayload {
   email?: string;
   password?: string;
 }
+
+export type UpdateResidentPayload = Partial<CreateResidentPayload>;
 
 export const residentService = {
   async getAll(): Promise<Resident[]> {
@@ -23,6 +25,21 @@ export const residentService = {
 
   async create(payload: CreateResidentPayload): Promise<Resident> {
     const response = await api.post<Resident>("/residents", payload);
+    return response.data;
+  },
+
+  async update(id: string, payload: UpdateResidentPayload): Promise<Resident> {
+    const response = await api.put<Resident>(`/residents/${id}`, payload);
+    return response.data;
+  },
+
+  async register(payload: CreateResidentPayload): Promise<{ message: string; resident: Resident }> {
+    const response = await api.post<{ message: string; resident: Resident }>("/auth/register", payload);
+    return response.data;
+  },
+
+  async getPublicApartments(): Promise<Apartment[]> {
+    const response = await api.get<Apartment[]>("/auth/apartments");
     return response.data;
   },
 

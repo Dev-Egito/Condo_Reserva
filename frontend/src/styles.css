@@ -918,3 +918,68 @@ button:focus-visible, input:focus-visible { outline: 3px solid #a9c5f3; outline-
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+
+/* ========================================================
+   Novos estilos: Abas de Cadastro/Login e Barra de Busca
+   ======================================================== */
+.login-notice.success-notice {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-weight: 500;
+  margin: -10px 0 16px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.auth-mode-switch {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+  gap: 20px;
+}
+
+.auth-mode-btn {
+  background: none;
+  border: none;
+  padding: 10px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.auth-mode-btn:hover {
+  color: #1d4ed8;
+}
+
+.auth-mode-btn.active {
+  color: #2563eb;
+  border-bottom: 2px solid #2563eb;
+  margin-bottom: -2px;
+}
+
+.search-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  background: #f9fafb;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #1f2937;
+  outline: none;
+}

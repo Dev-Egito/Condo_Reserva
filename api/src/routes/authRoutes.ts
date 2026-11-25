@@ -1,9 +1,76 @@
 import { Router } from "express";
 import { userController } from "../controllers/userController";
 import { validateBody } from "../middlewares/validationMiddleware";
-import { loginSchema } from "shared";
+import { loginSchema, createResidentSchema } from "shared";
+import { apartmentService } from "../services/apartmentService";
+import { residentService } from "../services/residentService";
 
 const authRoutes = Router();
+
+/**
+ * @openapi
+ * /auth/apartments:
+ *   get:
+ *     tags:
+ *       - Autenticação
+ *     summary: Lista pública de apartamentos para seleção no cadastro
+ *     description: Retorna os apartamentos disponíveis para que um novo morador selecione a unidade no formulário de auto-cadastro.
+ *     responses:
+ *       200:
+ *         description: Lista de apartamentos.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ApartmentResponse'
+ */
+authRoutes.get("/apartments", async (req, res, next) => {
+  try {
+    const apartments = await apartmentService.findAll();
+    return res.status(200).json(apartments);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+/**
+ * @openapi
+ * /auth/register:
+ *   post:
+ *     tags:
+ *       - Autenticação
+ *     summary: Cadastro de novo morador/usuário
+ *     description: Permite o auto-cadastro de morador com usuário de acesso ao sistema (senha criptografada com bcrypt).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateResidentRequest'
+ *     responses:
+ *       201:
+ *         description: Cadastro realizado com sucesso.
+ *       400:
+ *         description: Dados inválidos enviados.
+ *       409:
+ *         description: CPF ou e-mail já cadastrado.
+ */
+authRoutes.post(
+  "/register",
+  validateBody(createResidentSchema),
+  async (req, res, next) => {
+    try {
+      const resident = await residentService.create(req.body);
+      return res.status(201).json({
+        message: "Cadastro realizado com sucesso! Faça login para continuar.",
+        resident,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
 
 /**
  * @openapi

@@ -1,233 +1,152 @@
 # CondoReserva
 
-Sistema web de gestão e reserva de áreas comuns em condomínios residenciais, desenvolvido na disciplina de Programação Web Avançada do curso de Análise e Desenvolvimento de Sistemas (ADS).
+> 🎥 **Vídeo da Apresentação do Projeto:**  
+> **[Clique aqui para assistir ao vídeo no YouTube](COLOQUE_O_LINK_DO_SEU_VIDEO_AQUI)** *(Link não listado ou Google Drive com permissão pública)*
 
-## Tecnologias utilizadas
+---
 
-- **Backend:** Node.js, TypeScript e Express.
-- **Banco de dados:** PostgreSQL 16.
-- **ORM:** Prisma 7.
-- **Autenticação:** JWT e bcrypt.
-- **Validação:** Zod.
-- **Documentação:** Swagger / OpenAPI.
-- **Frontend:** React 19, TypeScript, Vite e Axios.
-- **Biblioteca compartilhada:** TypeScript e Zod.
-- **Infraestrutura:** Docker e npm workspaces.
+## 👥 Integrantes da Equipe
 
-## Estrutura do projeto
+| Nome Completo | RGM | Atribuição / O que fez no projeto |
+| :--- | :--- | :--- |
+| **[Nome do Integrante 1]** | `[RGM 1]` | Modelagem relacional no Prisma, Migrations, Seed do banco e Swagger. |
+| **[Nome do Integrante 2]** | `[RGM 2]` | Frontend React (rotas protegidas, painel de administração e morador). |
+| **[Nome do Integrante 3]** | `[RGM 3]` | Pacote compartilhado Zod (`@condoreserva/shared`) e integração Axios. |
+| **[Nome do Integrante 4]** | `[RGM 4]` | Testes de validação, tratamento de erros e segurança com bcrypt e JWT. |
 
-O projeto utiliza uma arquitetura de monorepo, organizada em três workspaces:
+---
 
-```text
-Condo_Reserva/
-├── api/
-│   ├── prisma/
-│   │   ├── migrations/
-│   │   └── seed.ts
-│   └── src/
-│       ├── config/
-│       ├── controllers/
-│       ├── database/
-│       ├── middlewares/
-│       ├── repositories/
-│       ├── routes/
-│       ├── services/
-│       ├── types/
-│       └── utils/
-├── frontend/
-│   └── src/
-│       ├── components/
-│       ├── contexts/
-│       ├── pages/
-│       ├── routes/
-│       ├── services/
-│       └── types/
-├── shared/
-│   └── src/
-│       └── schemas/
-├── docker-compose.yml
-└── package.json
-```
+## 🏢 Tema e Modelagem do Banco de Dados
 
-- **api:** Backend responsável pelas regras de negócio, autenticação, persistência e validações.
-- **frontend:** Interface web e gerenciamento da autenticação e navegação.
-- **shared:** Tipos e schemas de validação compartilhados entre frontend e backend.
+O **CondoReserva** é um sistema web full stack para gestão de condomínios residenciais. Ele gerencia as unidades habitacionais, os moradores cadastrados e o agendamento de áreas de lazer comuns (churrasqueira, salão de festas, piscina, quadra poliesportiva), impedindo conflitos de horários em reservas e aplicando controle de acesso (RBAC).
 
-## Funcionalidades
+### Tabelas e Relacionamentos no Banco (`schema.prisma`):
 
-### Backend
+1. **`User` (Tabela de Login do Sistema):**
+   - Campos: `id`, `name`, `email` (`@unique`), `passwordHash`, `role` (`ADMIN` \| `RESIDENT`), `createdAt`, `updatedAt`.
+   - Senhas criptografadas com `bcrypt`.
+2. **`Apartment` (Unidade Habitacional):**
+   - Campos: `id`, `block`, `number`, `createdAt`, `updatedAt`.
+   - Restrição: `@@unique([block, number])` — impede duplicidade de número no mesmo bloco.
+3. **`Resident` (Morador do Condomínio):**
+   - Campos: `id`, `fullName`, `cpf` (`@unique`), `phone`, `apartmentId`, `userId` (`@unique`).
+   - Relações:
+     - `apartmentId → Apartment.id` (`onDelete: Restrict`)
+     - `userId → User.id` (`onDelete: SetNull`)
+4. **`LeisureArea` (Áreas de Lazer):**
+   - Campos: `id`, `name`, `description`, `active` (`Boolean`), `createdAt`, `updatedAt`.
+5. **`Reservation` (Tabela ligada a duas outras - Consulta/Agendamento):**
+   - Campos: `id`, `residentId`, `leisureAreaId`, `startAt`, `endAt`, `status` (`CONFIRMED` \| `CANCELLED`), `createdAt`, `updatedAt`.
+   - Relações:
+     - `residentId → Resident.id` (`onDelete: Restrict`)
+     - `leisureAreaId → LeisureArea.id` (`onDelete: Restrict`)
+   - Na listagem de reservas, inclui os nomes das entidades vinculadas (`include` no Prisma trazendo `resident.fullName`, `apartment.block`, `apartment.number` e `leisureArea.name`).
 
-- Autenticação de usuários com JWT.
-- Controle de acesso por perfil (`ADMIN` e `RESIDENT`).
-- Gerenciamento de apartamentos e moradores.
-- Gerenciamento de áreas de lazer.
-- Criação, consulta, atualização e cancelamento de reservas.
-- Validação de conflitos de horários.
-- Validação de dados com Zod.
-- Documentação interativa dos endpoints com Swagger.
+---
 
-### Frontend
+## 🔑 Credenciais do Seed para Acesso ao Sistema
 
-- Tela de login.
-- Gerenciamento global da autenticação com `AuthContext`.
-- Persistência da sessão com JWT.
-- Rotas protegidas conforme o perfil do usuário.
-- Cliente HTTP centralizado com Axios e interceptors.
+O banco de dados já vem populado pelo `seed.ts` com as seguintes contas prontas para teste:
 
-## Como executar o projeto
+| Perfil | E-mail | Senha | Destino após login |
+| :--- | :--- | :--- | :--- |
+| **Administrador** | `admin@condoreserva.com` | `12345678` | Painel Administrativo (`/admin`) |
+| **Morador 1** | `joao.silva@condoreserva.com` | `morador123` | Painel do Morador (`/dashboard`) |
+| **Morador 2** | `maria.oliveira@condoreserva.com` | `morador123` | Painel do Morador (`/dashboard`) |
+
+---
+
+## 🚀 Como Rodar o Projeto do Zero (Passo a Passo)
 
 ### 1. Pré-requisitos
+- **Node.js** (v18+) e **npm**
+- **Docker** e **Docker Desktop** em execução
 
-- Node.js.
-- npm.
-- Docker e Docker Compose.
-
-### 2. Clonar e instalar dependências
-
-Na raiz do projeto:
-
+### 2. Clonar o repositório e instalar dependências
+Na raiz do projeto clonado:
 ```bash
 git clone <URL_DO_REPOSITORIO>
 cd Condo_Reserva
 npm install
 ```
+*(O comando `npm install` na raiz instala automaticamente as dependências de todos os 3 pacotes: `shared`, `api` e `frontend`).*
 
-### 3. Configurar o banco de dados
-
-Inicie o PostgreSQL com Docker:
-
+### 3. Subir o Banco de Dados PostgreSQL no Docker
 ```bash
 docker compose up -d
 ```
+*(O PostgreSQL estará rodando no container mapeado para a porta `5433`).*
 
-O banco estará disponível em `localhost:5433`.
-
-### 4. Configurar variáveis de ambiente
-
-Crie o arquivo `.env` da API:
-
+### 4. Configurar as variáveis de ambiente da API
+Copie o arquivo de exemplo para criar o `.env`:
 ```bash
 cp api/.env.example api/.env
 ```
+*(No Windows PowerShell, pode usar `Copy-Item api/.env.example api/.env`).*
 
-Configure as variáveis:
-
+O arquivo `api/.env` já vem pré-configurado para a porta `5433`:
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5433/condo_reserva"
-
-JWT_SECRET="SUA_CHAVE_SECRETA"
-
+JWT_SECRET="67823a71c2309cb9fe3bf73348c217b3923f8db124a1eef350bd88bbae07a2e5"
 ADMIN_NAME="Administrador"
 ADMIN_EMAIL="admin@condoreserva.com"
-ADMIN_PASSWORD="SUA_SENHA_SEGURA"
+ADMIN_PASSWORD="12345678"
 ```
 
-Altere a senha padrão do administrador e utilize uma chave JWT segura antes de executar o projeto.
-
-No Linux, uma chave pode ser gerada com:
-
-```bash
-openssl rand -hex 32
-```
-
-### 5. Preparar o banco de dados
-
-Entre na pasta da API:
-
+### 5. Executar as Migrations e o Seed do Banco
+Na pasta da API:
 ```bash
 cd api
-```
-
-Gere o Prisma Client:
-
-```bash
-npx prisma generate
-```
-
-Execute as migrations:
-
-```bash
 npx prisma migrate dev
-```
-
-Crie ou verifique o usuário administrador:
-
-```bash
 npm run seed
-```
-
-O administrador será criado com as credenciais definidas no `.env`. A execução do seed novamente não cria usuários duplicados.
-
-Retorne à raiz:
-
-```bash
 cd ..
 ```
 
-### 6. Compilar a biblioteca compartilhada
+### 6. Executar a Aplicação
 
-Antes de iniciar a API, compile o workspace `shared`:
-
-```bash
-npm run build:shared
-```
-
-### 7. Executar o backend
-
-Em um terminal, na raiz do projeto:
-
+Em um terminal (na raiz do projeto):
 ```bash
 npm run dev:api
 ```
+*API rodando em:* `http://localhost:3000`  
+*Documentação Swagger em:* `http://localhost:3000/docs/`
 
-A API estará disponível em:
-
-`http://localhost:3000`
-
-### 8. Executar o frontend
-
-Em outro terminal, na raiz do projeto:
-
+Em outro terminal (na raiz do projeto):
 ```bash
 npm run dev:frontend
 ```
+*Aplicação Web rodando em:* `http://localhost:5173`
 
-A aplicação estará disponível em:
+---
 
-`http://localhost:5173`
+## 🛠️ Validação dos Builds
 
-## Documentação da API
+Para certificar que não há erros de compilação ou TypeScript:
+```bash
+npm run build -w api
+npm run build -w frontend
+```
 
-A documentação interativa dos endpoints está disponível através do Swagger:
+Ambos terminam com sucesso e **0 erros** de compilação.
 
-`http://localhost:3000/docs`
+---
 
-A interface permite consultar os endpoints, visualizar os parâmetros e testar requisições autenticadas utilizando o token JWT.
+## 📖 Funcionalidades Implementadas
 
-## Scripts disponíveis
+### Backend (`api`)
+- Arquitetura em 4 camadas: `routes → controllers → services → repositories`.
+- CRUD completo das 4 tabelas de domínio (`Apartment`, `Resident`, `LeisureArea`, `Reservation`).
+- Autenticação e auto-cadastro de morador com `bcrypt` (senha nunca exposta nas respostas).
+- Validação com **Zod** em todo `POST` e `PUT` através de middleware centralizado `validateBody`.
+- Tratamento de conflito de chave única (`P2002` tratado com status `409` e mensagem clara).
+- Documentação interativa via **Swagger** em `/docs`.
 
-Na raiz do projeto:
-
-| Comando | Descrição |
-|---|---|
-| `npm install` | Instala as dependências dos workspaces |
-| `npm run build` | Compila todos os workspaces |
-| `npm run build:shared` | Compila a biblioteca compartilhada |
-| `npm run build:api` | Compila o backend |
-| `npm run build:frontend` | Compila o frontend |
-| `npm run dev:api` | Inicia o backend em desenvolvimento |
-| `npm run dev:frontend` | Inicia o frontend em desenvolvimento |
-
-Na pasta `api`:
-
-| Comando | Descrição |
-|---|---|
-| `npx prisma generate` | Gera o Prisma Client |
-| `npx prisma migrate dev` | Executa as migrations |
-| `npm run seed` | Cria ou verifica o administrador |
-| `npm run build` | Compila a API |
-
-## Perfis de acesso
-
-- **ADMIN:** gerencia moradores, apartamentos, áreas de lazer e reservas.
-- **RESIDENT:** consulta áreas de lazer, realiza reservas e gerencia suas próprias reservas.
+### Frontend (`frontend`)
+- Telas de **Login** e **Cadastro de Morador** validadas antes do envio usando `safeParse` dos schemas do `shared`.
+- Painel Administrativo com abas para cada uma das 4 tabelas:
+  - Listagem dos registros com `useEffect`.
+  - **Cria e edita no mesmo modal** (com pré-carregamento dos dados para `PUT`).
+  - **Remove pedindo confirmação** (`window.confirm`).
+- Seleção de chaves estrangeiras via `<select>` dinâmico (escolha de apartamento e área de lazer).
+- **Busca por texto em tempo real** usando `.filter()` em todas as tabelas.
+- Cliente **Axios** centralizado com interceptor para injeção automática de `Authorization: Bearer <token>`.

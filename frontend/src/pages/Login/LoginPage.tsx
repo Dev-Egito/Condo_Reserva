@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { loginSchema, createResidentSchema } from "shared";
+import { residentService } from "../../services/residentService";
+import { Apartment } from "../../types/models";
 import { isAxiosError } from "axios";
 
 function CondoIllustration() {
@@ -59,32 +62,16 @@ function CondoIllustration() {
             <path d={`m456 ${94 + row * 24} 17-9v19l-17 9z`} fill="#3475d2" />
           </g>
         ))}
-        <path d="m384 218 19 10v35l-19-10z" fill="#17385f" />
+        <path d="m362 219 18 9v36l-18-10z" fill="#2d6bcc" />
+        <path d="m410 115 8-4v152l-8 4z" fill="#d7e5f7" />
       </g>
 
-      <path d="m80 291 191-101 187 94-193 104z" fill="#d5e5fb" />
-      <path d="m99 291 171-91 166 84-173 93z" fill="url(#court)" />
-      <path d="m115 291 155-82 148 75-155 83z" fill="none" stroke="#fff" strokeWidth="3" />
-      <path d="m270 209v158m-77-117 154 78m-111-100 143 71m-210-49 155 79m-92-105v158" fill="none" stroke="#fff" strokeWidth="2" />
-      <path d="m202 249 139 70" fill="none" stroke="#fff" strokeWidth="3" />
-      <path d="m198 245 4 2v22l-4-2zm145 72 4 2v21l-4-2z" fill="#20354b" />
-      <path d="m201 246 143 71" stroke="#fff" strokeDasharray="2 2" strokeWidth="2" />
-
-      <path d="m389 221 82-43 72 36-83 45z" fill="#d4e4f9" />
-      <path d="m403 217 68-36 60 30-69 37z" fill="#74bfce" />
-      <path d="m412 217 59-31 51 25-60 32z" fill="#a5dce1" />
-      <path d="m430 211 41-21 34 17-42 23z" fill="none" stroke="#effcff" strokeWidth="2" />
-      <path d="m470 190v52m-30-35 60 29" stroke="#e8faff" strokeWidth="2" opacity=".9" />
-
-      {[
-        [102, 235], [131, 247], [310, 187], [337, 199], [493, 184], [524, 197],
-      ].map(([x, y], index) => (
-        <g key={`tree-${index}`}>
-          <path d={`M${x} ${y + 23}v19`} stroke="#9c806e" strokeWidth="5" />
-          <ellipse cx={x} cy={y + 10} rx="15" ry="19" fill={index % 2 ? "#87b8ae" : "#75a99e"} />
-          <ellipse cx={x + 10} cy={y + 17} rx="11" ry="13" fill="#9bc7ba" />
-        </g>
-      ))}
+      <path d="m142 308 198 83 238-124-210-72z" fill="#9ec5ff" />
+      <path d="m183 312 165 67 197-104-169-58z" fill="url(#court)" />
+      <path d="m202 312 153 62 166-88-154-53z" fill="none" stroke="#e8f2ff" strokeWidth="2.5" />
+      <path d="m278 281 161 63" fill="none" stroke="#e8f2ff" strokeWidth="2" />
+      <path d="m354 266v115" fill="none" stroke="#fff" strokeWidth="3" opacity=".9" />
+      <ellipse cx="355" cy="324" rx="22" ry="12" fill="none" stroke="#fff" strokeWidth="2" />
     </svg>
   );
 }
@@ -94,25 +81,63 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Modo: Login ou Cadastro de Morador
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [profile, setProfile] = useState<"resident" | "staff">("resident");
+
+  // Campos de Login
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Campos de Cadastro
+  const [regFullName, setRegFullName] = useState("");
+  const [regCpf, setRegCpf] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regAptId, setRegAptId] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [apartments, setApartments] = useState<Apartment[]>([]);
+
+  // Notificações de Erro e Sucesso
   const [errorNotice, setErrorNotice] = useState("");
+  const [successNotice, setSuccessNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Se já estiver logado e não estiver carregando, redireciona para o destino
+  // Carregar lista de apartamentos para o select de cadastro
+  useEffect(() => {
+    if (authMode === "register") {
+      residentService
+        .getPublicApartments()
+        .then((data) => {
+          setApartments(data);
+          if (data.length > 0 && !regAptId) {
+            setRegAptId(data[0].id);
+          }
+        })
+        .catch(() => {
+          setErrorNotice("Não foi possível carregar a lista de apartamentos.");
+        });
+    }
+  }, [authMode, regAptId]);
+
+  // Se já estiver autenticado, redireciona para a página correspondente
   if (!isLoading && isAuthenticated && user) {
     const destination = user.role === "ADMIN" ? "/admin" : "/dashboard";
     return <Navigate to={destination} replace />;
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  // Submissão do Login
+  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorNotice("");
+    setSuccessNotice("");
 
-    if (!email.trim() || !password) {
-      setErrorNotice("Por favor, preencha o e-mail e a senha.");
+    // Validação com safeParse do Zod (Requisito obrigatório da disciplina)
+    const validation = loginSchema.safeParse({ email: email.trim(), password });
+    if (!validation.success) {
+      const errorMsg = validation.error.issues.map((i) => i.message).join("; ");
+      setErrorNotice(errorMsg);
       return;
     }
 
@@ -120,7 +145,6 @@ export const LoginPage: React.FC = () => {
       setIsSubmitting(true);
       const loggedUser = await login(email, password);
 
-      // Redireciona para a página que o usuário tentou acessar ou para a padrão
       const fromPath = (location.state as { from?: { pathname?: string } })?.from?.pathname;
       if (fromPath && fromPath !== "/login") {
         navigate(fromPath, { replace: true });
@@ -140,6 +164,51 @@ export const LoginPage: React.FC = () => {
         }
       } else {
         setErrorNotice("Ocorreu um erro inesperado ao realizar o login.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // Submissão do Cadastro de Morador
+  async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErrorNotice("");
+    setSuccessNotice("");
+
+    const payload = {
+      fullName: regFullName.trim(),
+      cpf: regCpf.trim(),
+      phone: regPhone.trim(),
+      apartmentId: regAptId,
+      email: regEmail.trim(),
+      password: regPassword,
+    };
+
+    // Validação com safeParse do Zod (Requisito obrigatório da disciplina)
+    const validation = createResidentSchema.safeParse(payload);
+    if (!validation.success) {
+      const errorMsg = validation.error.issues.map((i) => i.message).join("; ");
+      setErrorNotice(errorMsg);
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const result = await residentService.register(payload);
+      setSuccessNotice(result.message || "Cadastro realizado com sucesso! Faça login com seu e-mail e senha.");
+      setEmail(regEmail.trim());
+      setAuthMode("login");
+      setRegFullName("");
+      setRegCpf("");
+      setRegPhone("");
+      setRegPassword("");
+    } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        const apiMessage = err.response?.data?.message || err.response?.data?.error;
+        setErrorNotice(apiMessage || "Erro ao realizar o cadastro. Verifique os dados.");
+      } else {
+        setErrorNotice("Ocorreu um erro inesperado ao realizar o cadastro.");
       }
     } finally {
       setIsSubmitting(false);
@@ -167,88 +236,239 @@ export const LoginPage: React.FC = () => {
             <br />
             CondoReserva
           </h1>
-          <p className="login-subtitle">Entre para gerenciar suas reservas.</p>
+          <p className="login-subtitle">
+            {authMode === "login"
+              ? "Entre para gerenciar suas reservas."
+              : "Cadastre-se para solicitar acesso e reservar espaços."}
+          </p>
 
-          <div className="profile-tabs" role="tablist" aria-label="Tipo de acesso">
+          {/* Abas: Entrar vs Cadastrar-se */}
+          <div className="auth-mode-switch" role="tablist">
             <button
-              className={profile === "resident" ? "selected" : ""}
               type="button"
-              role="tab"
-              aria-selected={profile === "resident"}
+              className={`auth-mode-btn ${authMode === "login" ? "active" : ""}`}
               onClick={() => {
-                setProfile("resident");
+                setAuthMode("login");
                 setErrorNotice("");
+                setSuccessNotice("");
               }}
             >
-              Morador
+              Entrar
             </button>
             <button
-              className={profile === "staff" ? "selected" : ""}
               type="button"
-              role="tab"
-              aria-selected={profile === "staff"}
+              className={`auth-mode-btn ${authMode === "register" ? "active" : ""}`}
               onClick={() => {
-                setProfile("staff");
+                setAuthMode("register");
                 setErrorNotice("");
+                setSuccessNotice("");
               }}
             >
-              Porteiro / Administrador
+              Criar Conta (Novo Morador)
             </button>
           </div>
 
-          <form className="login-form" onSubmit={handleSubmit}>
-            <label htmlFor="email">{profile === "resident" ? "E-mail de morador" : "E-mail administrativo"}</label>
-            <input
-              autoComplete="username"
-              id="email"
-              name="email"
-              placeholder={profile === "resident" ? "seu.email@exemplo.com" : "admin@condoreserva.com"}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isSubmitting}
-              required
-            />
+          {/* Formulário de Login */}
+          {authMode === "login" && (
+            <>
+              <div className="profile-tabs" role="tablist" aria-label="Tipo de acesso">
+                <button
+                  className={profile === "resident" ? "selected" : ""}
+                  type="button"
+                  role="tab"
+                  aria-selected={profile === "resident"}
+                  onClick={() => {
+                    setProfile("resident");
+                    setErrorNotice("");
+                  }}
+                >
+                  Morador
+                </button>
+                <button
+                  className={profile === "staff" ? "selected" : ""}
+                  type="button"
+                  role="tab"
+                  aria-selected={profile === "staff"}
+                  onClick={() => {
+                    setProfile("staff");
+                    setErrorNotice("");
+                  }}
+                >
+                  Porteiro / Administrador
+                </button>
+              </div>
 
-            <label htmlFor="password">Senha</label>
-            <div className="password-field">
+              <form className="login-form" onSubmit={handleLogin}>
+                <label htmlFor="email">
+                  {profile === "resident" ? "E-mail de morador" : "E-mail administrativo"}
+                </label>
+                <input
+                  autoComplete="username"
+                  id="email"
+                  name="email"
+                  placeholder={profile === "resident" ? "joao.silva@condoreserva.com" : "admin@condoreserva.com"}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
+                  required
+                />
+
+                <label htmlFor="password">Senha</label>
+                <div className="password-field">
+                  <input
+                    autoComplete="current-password"
+                    id="password"
+                    name="password"
+                    placeholder="Digite sua senha"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isSubmitting}
+                    required
+                  />
+                  <button
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    className="password-toggle"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    type="button"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                        <path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c5.5 0 9 7 9 7a15.7 15.7 0 0 1-3.1 3.8M6.2 6.2C3.9 7.7 3 12 3 12s3.5 7 9 7a9.9 9.9 0 0 0 4.1-.9" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
+                        <circle cx="12" cy="12" r="2.5" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+
+                {successNotice && (
+                  <p className="login-notice success-notice" role="status">
+                    {successNotice}
+                  </p>
+                )}
+
+                {errorNotice && (
+                  <p className="login-notice error-notice" role="alert">
+                    {errorNotice}
+                  </p>
+                )}
+
+                <button className="submit-button" type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Entrando..." : "Entrar"}
+                </button>
+                <p className="secure-note">Acesso seguro e exclusivo para o seu condomínio.</p>
+              </form>
+            </>
+          )}
+
+          {/* Formulário de Cadastro de Morador */}
+          {authMode === "register" && (
+            <form className="login-form" onSubmit={handleRegister}>
+              <label htmlFor="regFullName">Nome Completo</label>
               <input
-                autoComplete="current-password"
-                id="password"
-                name="password"
-                placeholder="Digite sua senha"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                id="regFullName"
+                type="text"
+                placeholder="Ex: Carlos Eduardo de Souza"
+                value={regFullName}
+                onChange={(e) => setRegFullName(e.target.value)}
                 disabled={isSubmitting}
                 required
               />
-              <button
-                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                className="password-toggle"
-                onClick={() => setShowPassword((visible) => !visible)}
-                type="button"
-                tabIndex={-1}
+
+              <div className="form-row">
+                <div className="form-col">
+                  <label htmlFor="regCpf">CPF</label>
+                  <input
+                    id="regCpf"
+                    type="text"
+                    placeholder="12345678901"
+                    value={regCpf}
+                    onChange={(e) => setRegCpf(e.target.value)}
+                    disabled={isSubmitting}
+                    required
+                  />
+                </div>
+                <div className="form-col">
+                  <label htmlFor="regPhone">Telefone</label>
+                  <input
+                    id="regPhone"
+                    type="text"
+                    placeholder="(83) 99999-8888"
+                    value={regPhone}
+                    onChange={(e) => setRegPhone(e.target.value)}
+                    disabled={isSubmitting}
+                    required
+                  />
+                </div>
+              </div>
+
+              <label htmlFor="regApt">Apartamento Vinculado</label>
+              <select
+                id="regApt"
+                style={{
+                  width: "100%",
+                  height: "48px",
+                  marginBottom: "20px",
+                  borderRadius: "8px",
+                  border: "1px solid #dfe5ec",
+                  padding: "0 12px",
+                  fontSize: "14px",
+                  background: "#fff",
+                }}
+                value={regAptId}
+                onChange={(e) => setRegAptId(e.target.value)}
+                disabled={isSubmitting}
+                required
               >
-                {showPassword ? (
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c5.5 0 9 7 9 7a15.7 15.7 0 0 1-3.1 3.8M6.2 6.2C3.9 7.7 3 12 3 12s3.5 7 9 7a9.9 9.9 0 0 0 4.1-.9" /></svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" /><circle cx="12" cy="12" r="2.5" /></svg>
-                )}
+                {apartments.length === 0 && <option value="">Carregando apartamentos...</option>}
+                {apartments.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    Bloco {a.block} — Apto {a.number}
+                  </option>
+                ))}
+              </select>
+
+              <label htmlFor="regEmail">E-mail para Acesso</label>
+              <input
+                id="regEmail"
+                type="email"
+                placeholder="seu.email@exemplo.com"
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+                disabled={isSubmitting}
+                required
+              />
+
+              <label htmlFor="regPassword">Senha (Mínimo 8 caracteres)</label>
+              <input
+                id="regPassword"
+                type="password"
+                placeholder="********"
+                value={regPassword}
+                onChange={(e) => setRegPassword(e.target.value)}
+                disabled={isSubmitting}
+                required
+              />
+
+              {errorNotice && (
+                <p className="login-notice error-notice" role="alert">
+                  {errorNotice}
+                </p>
+              )}
+
+              <button className="submit-button" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Cadastrando..." : "Concluir Cadastro"}
               </button>
-            </div>
-
-            {errorNotice && (
-              <p className="login-notice error-notice" role="alert">
-                {errorNotice}
-              </p>
-            )}
-
-            <button className="submit-button" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Entrando..." : "Entrar"}
-            </button>
-            <p className="secure-note">Acesso seguro e exclusivo para o seu condomínio.</p>
-          </form>
+              <p className="secure-note">Suas informações são protegidas e validadas via Zod & bcrypt.</p>
+            </form>
+          )}
         </div>
 
         <footer className="login-footer">

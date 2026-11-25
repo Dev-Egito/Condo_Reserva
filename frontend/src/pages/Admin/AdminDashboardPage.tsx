@@ -14,22 +14,31 @@ export const AdminDashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Dados
+  // Busca textual com .filter (Requisito obrigatório da disciplina - Aula 4)
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Dados carregados da API
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [areas, setAreas] = useState<LeisureArea[]>([]);
   const [apartments, setApartments] = useState<Apartment[]>([]);
   const [residents, setResidents] = useState<Resident[]>([]);
 
-  // Modais de Criação
+  // Estados de Criação e Edição no mesmo modal (Requisito obrigatório da disciplina)
+  // 1. Áreas de Lazer
   const [isAreaModalOpen, setIsAreaModalOpen] = useState(false);
+  const [editingArea, setEditingArea] = useState<LeisureArea | null>(null);
   const [newAreaName, setNewAreaName] = useState("");
   const [newAreaDesc, setNewAreaDesc] = useState("");
 
+  // 2. Apartamentos
   const [isAptModalOpen, setIsAptModalOpen] = useState(false);
+  const [editingApt, setEditingApt] = useState<Apartment | null>(null);
   const [newAptBlock, setNewAptBlock] = useState("");
   const [newAptNumber, setNewAptNumber] = useState("");
 
+  // 3. Moradores
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
+  const [editingResident, setEditingResident] = useState<Resident | null>(null);
   const [resFullName, setResFullName] = useState("");
   const [resCpf, setResCpf] = useState("");
   const [resPhone, setResPhone] = useState("");
@@ -39,7 +48,7 @@ export const AdminDashboardPage: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Carregamento de Dados
+  // Carregamento de Dados (useEffect)
   const loadAllData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -68,21 +77,50 @@ export const AdminDashboardPage: React.FC = () => {
     loadAllData();
   }, [loadAllData]);
 
-  // Ações de Criação
-  async function handleCreateArea(e: React.FormEvent) {
+  // ==========================================
+  // Handlers: Áreas de Lazer (Criar e Editar no mesmo modal)
+  // ==========================================
+  function openCreateArea() {
+    setEditingArea(null);
+    setNewAreaName("");
+    setNewAreaDesc("");
+    setIsAreaModalOpen(true);
+  }
+
+  function openEditArea(area: LeisureArea) {
+    setEditingArea(area);
+    setNewAreaName(area.name);
+    setNewAreaDesc(area.description || "");
+    setIsAreaModalOpen(true);
+  }
+
+  async function handleSaveArea(e: React.FormEvent) {
     e.preventDefault();
     if (!newAreaName.trim()) return;
+
     try {
       setIsSubmitting(true);
-      await leisureAreaService.create({ name: newAreaName.trim(), description: newAreaDesc.trim() || undefined });
-      setFeedback({ type: "success", text: "Área de lazer cadastrada com sucesso!" });
+      if (editingArea) {
+        await leisureAreaService.update(editingArea.id, {
+          name: newAreaName.trim(),
+          description: newAreaDesc.trim() || undefined,
+        });
+        setFeedback({ type: "success", text: "Área de lazer atualizada com sucesso!" });
+      } else {
+        await leisureAreaService.create({
+          name: newAreaName.trim(),
+          description: newAreaDesc.trim() || undefined,
+        });
+        setFeedback({ type: "success", text: "Área de lazer cadastrada com sucesso!" });
+      }
       setIsAreaModalOpen(false);
+      setEditingArea(null);
       setNewAreaName("");
       setNewAreaDesc("");
       loadAllData();
     } catch (err: unknown) {
       const msg = isAxiosError(err) ? err.response?.data?.message || err.response?.data?.error : null;
-      setFeedback({ type: "error", text: msg || "Erro ao cadastrar área de lazer." });
+      setFeedback({ type: "error", text: msg || "Erro ao salvar área de lazer." });
     } finally {
       setIsSubmitting(false);
     }
@@ -99,7 +137,7 @@ export const AdminDashboardPage: React.FC = () => {
   }
 
   async function handleDeleteArea(id: string) {
-    if (!window.confirm("Deseja realmente excluir esta área de lazer?")) return;
+    if (!window.confirm("Deseja realmente remover esta área de lazer?")) return;
     try {
       await leisureAreaService.delete(id);
       setFeedback({ type: "success", text: "Área excluída com sucesso." });
@@ -110,27 +148,57 @@ export const AdminDashboardPage: React.FC = () => {
     }
   }
 
-  async function handleCreateApartment(e: React.FormEvent) {
+  // ==========================================
+  // Handlers: Apartamentos (Criar e Editar no mesmo modal)
+  // ==========================================
+  function openCreateApt() {
+    setEditingApt(null);
+    setNewAptBlock("");
+    setNewAptNumber("");
+    setIsAptModalOpen(true);
+  }
+
+  function openEditApt(apt: Apartment) {
+    setEditingApt(apt);
+    setNewAptBlock(apt.block);
+    setNewAptNumber(apt.number);
+    setIsAptModalOpen(true);
+  }
+
+  async function handleSaveApartment(e: React.FormEvent) {
     e.preventDefault();
     if (!newAptBlock.trim() || !newAptNumber.trim()) return;
+
     try {
       setIsSubmitting(true);
-      await apartmentService.create({ block: newAptBlock.trim(), number: newAptNumber.trim() });
-      setFeedback({ type: "success", text: "Apartamento cadastrado com sucesso!" });
+      if (editingApt) {
+        await apartmentService.update(editingApt.id, {
+          block: newAptBlock.trim(),
+          number: newAptNumber.trim(),
+        });
+        setFeedback({ type: "success", text: "Apartamento atualizado com sucesso!" });
+      } else {
+        await apartmentService.create({
+          block: newAptBlock.trim(),
+          number: newAptNumber.trim(),
+        });
+        setFeedback({ type: "success", text: "Apartamento cadastrado com sucesso!" });
+      }
       setIsAptModalOpen(false);
+      setEditingApt(null);
       setNewAptBlock("");
       setNewAptNumber("");
       loadAllData();
     } catch (err: unknown) {
       const msg = isAxiosError(err) ? err.response?.data?.message : null;
-      setFeedback({ type: "error", text: msg || "Erro ao cadastrar apartamento (já existente ou inválido)." });
+      setFeedback({ type: "error", text: msg || "Erro ao salvar apartamento (verifique duplicidade de bloco/número)." });
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleDeleteApartment(id: string) {
-    if (!window.confirm("Deseja realmente excluir este apartamento?")) return;
+    if (!window.confirm("Deseja realmente remover este apartamento?")) return;
     try {
       await apartmentService.delete(id);
       setFeedback({ type: "success", text: "Apartamento excluído com sucesso." });
@@ -141,35 +209,87 @@ export const AdminDashboardPage: React.FC = () => {
     }
   }
 
-  async function handleCreateResident(e: React.FormEvent) {
+  // ==========================================
+  // Handlers: Moradores (Criar e Editar no mesmo modal)
+  // ==========================================
+  function openCreateResident() {
+    setEditingResident(null);
+    setResFullName("");
+    setResCpf("");
+    setResPhone("");
+    setResEmail("");
+    setResPassword("");
+    setIsResidentModalOpen(true);
+  }
+
+  function openEditResident(r: Resident) {
+    setEditingResident(r);
+    setResFullName(r.fullName);
+    setResCpf(r.cpf);
+    setResPhone(r.phone);
+    setResAptId(r.apartmentId);
+    setResEmail("");
+    setResPassword("");
+    setIsResidentModalOpen(true);
+  }
+
+  async function handleSaveResident(e: React.FormEvent) {
     e.preventDefault();
-    if (!resFullName || !resCpf || !resPhone || !resAptId || !resEmail || !resPassword) {
-      setFeedback({ type: "error", text: "Preencha todos os campos do morador." });
-      return;
-    }
-    try {
-      setIsSubmitting(true);
-      await residentService.create({
-        fullName: resFullName.trim(),
-        cpf: resCpf.trim(),
-        phone: resPhone.trim(),
-        apartmentId: resAptId,
-        email: resEmail.trim(),
-        password: resPassword,
-      });
-      setFeedback({ type: "success", text: "Morador cadastrado e credenciais criadas com sucesso!" });
-      setIsResidentModalOpen(false);
-      setResFullName("");
-      setResCpf("");
-      setResPhone("");
-      setResEmail("");
-      setResPassword("");
-      loadAllData();
-    } catch (err: unknown) {
-      const msg = isAxiosError(err) ? err.response?.data?.message || err.response?.data?.error : null;
-      setFeedback({ type: "error", text: msg || "Erro ao cadastrar morador." });
-    } finally {
-      setIsSubmitting(false);
+
+    if (editingResident) {
+      if (!resFullName || !resPhone || !resAptId) {
+        setFeedback({ type: "error", text: "Preencha nome, telefone e selecione o apartamento." });
+        return;
+      }
+
+      try {
+        setIsSubmitting(true);
+        await residentService.update(editingResident.id, {
+          fullName: resFullName.trim(),
+          phone: resPhone.trim(),
+          apartmentId: resAptId,
+        });
+        setFeedback({ type: "success", text: "Cadastro do morador atualizado com sucesso!" });
+        setIsResidentModalOpen(false);
+        setEditingResident(null);
+        loadAllData();
+      } catch (err: unknown) {
+        const msg = isAxiosError(err) ? err.response?.data?.message || err.response?.data?.error : null;
+        setFeedback({ type: "error", text: msg || "Erro ao atualizar morador." });
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      if (!resFullName || !resCpf || !resPhone || !resAptId || !resEmail || !resPassword) {
+        setFeedback({ type: "error", text: "Preencha todos os campos do novo morador." });
+        return;
+      }
+
+      try {
+        setIsSubmitting(true);
+        await residentService.create({
+          fullName: resFullName.trim(),
+          cpf: resCpf.trim(),
+          phone: resPhone.trim(),
+          apartmentId: resAptId,
+          email: resEmail.trim(),
+          password: resPassword,
+        });
+        setFeedback({ type: "success", text: "Morador cadastrado e credenciais criadas com sucesso!" });
+        setIsResidentModalOpen(false);
+        setEditingResident(null);
+        setResFullName("");
+        setResCpf("");
+        setResPhone("");
+        setResEmail("");
+        setResPassword("");
+        loadAllData();
+      } catch (err: unknown) {
+        const msg = isAxiosError(err) ? err.response?.data?.message || err.response?.data?.error : null;
+        setFeedback({ type: "error", text: msg || "Erro ao cadastrar morador." });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   }
 
@@ -184,6 +304,9 @@ export const AdminDashboardPage: React.FC = () => {
     }
   }
 
+  // ==========================================
+  // Handlers: Reservas
+  // ==========================================
   async function handleCancelReservation(id: string) {
     try {
       await reservationService.cancel(id);
@@ -214,6 +337,46 @@ export const AdminDashboardPage: React.FC = () => {
     const d = new Date(iso);
     return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   }
+
+  // ==========================================
+  // Filtragem com .filter (Requisito da disciplina)
+  // ==========================================
+  const filteredReservations = reservations.filter((res) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      res.leisureArea?.name?.toLowerCase().includes(term) ||
+      res.resident?.fullName?.toLowerCase().includes(term) ||
+      res.resident?.apartment?.block?.toLowerCase().includes(term) ||
+      res.resident?.apartment?.number?.includes(term) ||
+      res.status?.toLowerCase().includes(term)
+    );
+  });
+
+  const filteredAreas = areas.filter((area) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      area.name.toLowerCase().includes(term) ||
+      (area.description && area.description.toLowerCase().includes(term))
+    );
+  });
+
+  const filteredApartments = apartments.filter((apt) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      apt.block.toLowerCase().includes(term) ||
+      apt.number.includes(term)
+    );
+  });
+
+  const filteredResidents = residents.filter((r) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      r.fullName.toLowerCase().includes(term) ||
+      r.cpf.includes(term) ||
+      r.phone.includes(term) ||
+      (r.apartment && (r.apartment.block.toLowerCase().includes(term) || r.apartment.number.includes(term)))
+    );
+  });
 
   return (
     <div className="dashboard-container">
@@ -253,6 +416,28 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         )}
 
+        {/* Barra de Busca com .filter (Requisito da aula 4) */}
+        <div className="search-bar-container">
+          <span style={{ fontSize: "16px" }}>🔍</span>
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Buscar por texto em tempo real (nome, bloco, apartamento, status)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm("")}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}
+              title="Limpar busca"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         {/* Navigation Tabs */}
         <div className="dashboard-nav-tabs">
           <button
@@ -260,28 +445,28 @@ export const AdminDashboardPage: React.FC = () => {
             onClick={() => setActiveTab("reservations")}
             type="button"
           >
-            Reservas Gerais ({reservations.length})
+            Reservas Gerais ({filteredReservations.length})
           </button>
           <button
             className={`tab-btn ${activeTab === "areas" ? "active" : ""}`}
             onClick={() => setActiveTab("areas")}
             type="button"
           >
-            Áreas de Lazer ({areas.length})
+            Áreas de Lazer ({filteredAreas.length})
           </button>
           <button
             className={`tab-btn ${activeTab === "apartments" ? "active" : ""}`}
             onClick={() => setActiveTab("apartments")}
             type="button"
           >
-            Apartamentos ({apartments.length})
+            Apartamentos ({filteredApartments.length})
           </button>
           <button
             className={`tab-btn ${activeTab === "residents" ? "active" : ""}`}
             onClick={() => setActiveTab("residents")}
             type="button"
           >
-            Moradores ({residents.length})
+            Moradores ({filteredResidents.length})
           </button>
         </div>
 
@@ -298,8 +483,8 @@ export const AdminDashboardPage: React.FC = () => {
                 <div className="section-toolbar">
                   <h3>Todas as Reservas do Condomínio</h3>
                 </div>
-                {reservations.length === 0 ? (
-                  <p className="empty-message">Nenhuma reserva registrada no condomínio.</p>
+                {filteredReservations.length === 0 ? (
+                  <p className="empty-message">Nenhuma reserva encontrada.</p>
                 ) : (
                   <table className="admin-table">
                     <thead>
@@ -314,7 +499,7 @@ export const AdminDashboardPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {reservations.map((res) => (
+                      {filteredReservations.map((res) => (
                         <tr key={res.id}>
                           <td><strong>{res.leisureArea?.name || "Área"}</strong></td>
                           <td>{res.resident?.fullName || "Morador"}</td>
@@ -365,7 +550,7 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="table-wrapper">
                 <div className="section-toolbar">
                   <h3>Gestão das Áreas de Lazer</h3>
-                  <button className="submit-button btn-compact" onClick={() => setIsAreaModalOpen(true)}>
+                  <button className="submit-button btn-compact" onClick={openCreateArea}>
                     + Nova Área de Lazer
                   </button>
                 </div>
@@ -379,7 +564,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {areas.map((area) => (
+                    {filteredAreas.map((area) => (
                       <tr key={area.id}>
                         <td><strong>{area.name}</strong></td>
                         <td>{area.description || "Sem descrição"}</td>
@@ -391,6 +576,13 @@ export const AdminDashboardPage: React.FC = () => {
                         <td className="table-actions">
                           <button
                             className="btn-table-action"
+                            onClick={() => openEditArea(area)}
+                            title="Editar Dados no mesmo Modal"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            className="btn-table-action"
                             onClick={() => handleToggleAreaActive(area)}
                           >
                             {area.active ? "Pôr em Manutenção" : "Ativar"}
@@ -398,6 +590,7 @@ export const AdminDashboardPage: React.FC = () => {
                           <button
                             className="btn-table-delete"
                             onClick={() => handleDeleteArea(area.id)}
+                            title="Remover Área"
                           >
                             Excluir
                           </button>
@@ -414,7 +607,7 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="table-wrapper">
                 <div className="section-toolbar">
                   <h3>Apartamentos Cadastrados</h3>
-                  <button className="submit-button btn-compact" onClick={() => setIsAptModalOpen(true)}>
+                  <button className="submit-button btn-compact" onClick={openCreateApt}>
                     + Novo Apartamento
                   </button>
                 </div>
@@ -427,14 +620,22 @@ export const AdminDashboardPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {apartments.map((apt) => (
+                    {filteredApartments.map((apt) => (
                       <tr key={apt.id}>
                         <td><strong>Bloco {apt.block}</strong></td>
                         <td>Apartamento {apt.number}</td>
                         <td className="table-actions">
                           <button
+                            className="btn-table-action"
+                            onClick={() => openEditApt(apt)}
+                            title="Editar Apartamento no mesmo Modal"
+                          >
+                            Editar
+                          </button>
+                          <button
                             className="btn-table-delete"
                             onClick={() => handleDeleteApartment(apt.id)}
+                            title="Remover Apartamento"
                           >
                             Excluir
                           </button>
@@ -451,7 +652,7 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="table-wrapper">
                 <div className="section-toolbar">
                   <h3>Moradores Cadastrados</h3>
-                  <button className="submit-button btn-compact" onClick={() => setIsResidentModalOpen(true)}>
+                  <button className="submit-button btn-compact" onClick={openCreateResident}>
                     + Novo Morador
                   </button>
                 </div>
@@ -466,7 +667,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {residents.map((r) => (
+                    {filteredResidents.map((r) => (
                       <tr key={r.id}>
                         <td><strong>{r.fullName}</strong></td>
                         <td>{r.cpf}</td>
@@ -478,8 +679,16 @@ export const AdminDashboardPage: React.FC = () => {
                         </td>
                         <td className="table-actions">
                           <button
+                            className="btn-table-action"
+                            onClick={() => openEditResident(r)}
+                            title="Editar Morador no mesmo Modal"
+                          >
+                            Editar
+                          </button>
+                          <button
                             className="btn-table-delete"
                             onClick={() => handleDeleteResident(r.id)}
+                            title="Remover Morador"
                           >
                             Excluir
                           </button>
@@ -494,15 +703,15 @@ export const AdminDashboardPage: React.FC = () => {
         )}
       </main>
 
-      {/* Modal: Nova Área */}
+      {/* Modal: Área de Lazer (Cria e Edita no mesmo modal) */}
       {isAreaModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsAreaModalOpen(false)}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Cadastrar Área de Lazer</h2>
+              <h2>{editingArea ? "Editar Área de Lazer" : "Cadastrar Área de Lazer"}</h2>
               <button className="modal-close-btn" onClick={() => setIsAreaModalOpen(false)}>&times;</button>
             </div>
-            <form onSubmit={handleCreateArea} className="modal-form">
+            <form onSubmit={handleSaveArea} className="modal-form">
               <label>Nome do Espaço</label>
               <input
                 type="text"
@@ -523,7 +732,7 @@ export const AdminDashboardPage: React.FC = () => {
                   Cancelar
                 </button>
                 <button type="submit" className="submit-button" disabled={isSubmitting}>
-                  {isSubmitting ? "Cadastrando..." : "Cadastrar Área"}
+                  {isSubmitting ? "Salvando..." : editingArea ? "Salvar Alterações" : "Cadastrar Área"}
                 </button>
               </div>
             </form>
@@ -531,15 +740,15 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal: Novo Apartamento */}
+      {/* Modal: Apartamento (Cria e Edita no mesmo modal) */}
       {isAptModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsAptModalOpen(false)}>
           <div className="modal-container modal-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Cadastrar Apartamento</h2>
+              <h2>{editingApt ? "Editar Apartamento" : "Cadastrar Apartamento"}</h2>
               <button className="modal-close-btn" onClick={() => setIsAptModalOpen(false)}>&times;</button>
             </div>
-            <form onSubmit={handleCreateApartment} className="modal-form">
+            <form onSubmit={handleSaveApartment} className="modal-form">
               <label>Bloco / Edifício</label>
               <input
                 type="text"
@@ -561,7 +770,7 @@ export const AdminDashboardPage: React.FC = () => {
                   Cancelar
                 </button>
                 <button type="submit" className="submit-button" disabled={isSubmitting}>
-                  {isSubmitting ? "Salvando..." : "Salvar Apartamento"}
+                  {isSubmitting ? "Salvando..." : editingApt ? "Salvar Alterações" : "Salvar Apartamento"}
                 </button>
               </div>
             </form>
@@ -569,15 +778,15 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal: Novo Morador */}
+      {/* Modal: Morador (Cria e Edita no mesmo modal) */}
       {isResidentModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsResidentModalOpen(false)}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Cadastrar Novo Morador</h2>
+              <h2>{editingResident ? "Editar Morador" : "Cadastrar Novo Morador"}</h2>
               <button className="modal-close-btn" onClick={() => setIsResidentModalOpen(false)}>&times;</button>
             </div>
-            <form onSubmit={handleCreateResident} className="modal-form">
+            <form onSubmit={handleSaveResident} className="modal-form">
               <label>Nome Completo</label>
               <input
                 type="text"
@@ -594,6 +803,7 @@ export const AdminDashboardPage: React.FC = () => {
                     placeholder="000.000.000-00"
                     value={resCpf}
                     onChange={(e) => setResCpf(e.target.value)}
+                    disabled={!!editingResident}
                     required
                   />
                 </div>
@@ -620,34 +830,38 @@ export const AdminDashboardPage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <div className="form-row">
-                <div className="form-col">
-                  <label>E-mail de Acesso</label>
-                  <input
-                    type="email"
-                    placeholder="morador@condominio.com"
-                    value={resEmail}
-                    onChange={(e) => setResEmail(e.target.value)}
-                    required
-                  />
+
+              {!editingResident && (
+                <div className="form-row">
+                  <div className="form-col">
+                    <label>E-mail de Acesso</label>
+                    <input
+                      type="email"
+                      placeholder="morador@condominio.com"
+                      value={resEmail}
+                      onChange={(e) => setResEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-col">
+                    <label>Senha Provisória (Mín. 8 dígitos)</label>
+                    <input
+                      type="password"
+                      placeholder="********"
+                      value={resPassword}
+                      onChange={(e) => setResPassword(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="form-col">
-                  <label>Senha Provisória (Mín. 8 dígitos)</label>
-                  <input
-                    type="password"
-                    placeholder="********"
-                    value={resPassword}
-                    onChange={(e) => setResPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+              )}
+
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setIsResidentModalOpen(false)}>
                   Cancelar
                 </button>
                 <button type="submit" className="submit-button" disabled={isSubmitting}>
-                  {isSubmitting ? "Cadastrando..." : "Criar Cadastro de Morador"}
+                  {isSubmitting ? "Salvando..." : editingResident ? "Salvar Alterações" : "Criar Cadastro de Morador"}
                 </button>
               </div>
             </form>

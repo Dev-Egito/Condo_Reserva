@@ -17,6 +17,11 @@ export const apartmentService = {
     return response.data;
   },
 
+  async update(id: string, payload: CreateApartmentPayload): Promise<Apartment> {
+    const response = await api.put<Apartment>(`/apartments/${id}`, payload);
+    return response.data;
+  },
+
   async delete(id: string): Promise<void> {
     await api.delete(`/apartments/${id}`);
   },
