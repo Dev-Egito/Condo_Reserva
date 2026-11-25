@@ -24,6 +24,11 @@ export const reservationService = {
     return response.data;
   },
 
+  async update(id: string, payload: CreateReservationPayload): Promise<Reservation> {
+    const response = await api.put<Reservation>(`/reservations/${id}`, payload);
+    return response.data;
+  },
+
   async cancel(id: string): Promise<Reservation> {
     const response = await api.patch<Reservation>(`/reservations/${id}/cancel`);
     return response.data;

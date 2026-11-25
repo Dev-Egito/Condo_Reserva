@@ -7,6 +7,15 @@ import { residentService } from "../../services/residentService";
 import { reservationService } from "../../services/reservationService";
 import { isAxiosError } from "axios";
 
+function getLocalDateInputValue(date: Date) {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 10);
+}
+
+function getLocalTimeInputValue(date: Date) {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
 export const AdminDashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
 
@@ -45,6 +54,16 @@ export const AdminDashboardPage: React.FC = () => {
   const [resAptId, setResAptId] = useState("");
   const [resEmail, setResEmail] = useState("");
   const [resPassword, setResPassword] = useState("");
+
+  // 4. Reservas
+  const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
+  const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
+  const [reservationResidentId, setReservationResidentId] = useState("");
+  const [reservationAreaId, setReservationAreaId] = useState("");
+  const [reservationDate, setReservationDate] = useState("");
+  const [reservationStartTime, setReservationStartTime] = useState("10:00");
+  const [reservationEndTime, setReservationEndTime] = useState("12:00");
+  const [reservationError, setReservationError] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -307,6 +326,89 @@ export const AdminDashboardPage: React.FC = () => {
   // ==========================================
   // Handlers: Reservas
   // ==========================================
+  function openCreateReservation() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setEditingReservation(null);
+    setReservationError("");
+    setReservationResidentId(residents[0]?.id ?? "");
+    setReservationAreaId(areas.find((area) => area.active)?.id ?? "");
+    setReservationDate(getLocalDateInputValue(tomorrow));
+    setReservationStartTime("10:00");
+    setReservationEndTime("12:00");
+    setIsReservationModalOpen(true);
+  }
+
+  function openEditReservation(reservation: Reservation) {
+    const startAt = new Date(reservation.startAt);
+    const endAt = new Date(reservation.endAt);
+    setEditingReservation(reservation);
+    setReservationError("");
+    setReservationResidentId(reservation.residentId);
+    setReservationAreaId(reservation.leisureAreaId);
+    setReservationDate(getLocalDateInputValue(startAt));
+    setReservationStartTime(getLocalTimeInputValue(startAt));
+    setReservationEndTime(getLocalTimeInputValue(endAt));
+    setIsReservationModalOpen(true);
+  }
+
+  async function handleSaveReservation(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setReservationError("");
+
+    if (!reservationResidentId || !reservationAreaId || !reservationDate) {
+      setReservationError("Selecione o morador, a área e a data da reserva.");
+      return;
+    }
+
+    const startAt = new Date(`${reservationDate}T${reservationStartTime}:00`);
+    const endAt = new Date(`${reservationDate}T${reservationEndTime}:00`);
+
+    if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+      setReservationError("Informe uma data e horários válidos.");
+      return;
+    }
+
+    if (startAt <= new Date()) {
+      setReservationError("A data e o horário da reserva devem estar no futuro.");
+      return;
+    }
+
+    if (startAt >= endAt) {
+      setReservationError("O horário inicial deve ser anterior ao horário final.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const payload = {
+        residentId: reservationResidentId,
+        leisureAreaId: reservationAreaId,
+        startAt: startAt.toISOString(),
+        endAt: endAt.toISOString(),
+      };
+
+      if (editingReservation) {
+        await reservationService.update(editingReservation.id, payload);
+        setFeedback({ type: "success", text: "Reserva atualizada com sucesso." });
+      } else {
+        await reservationService.create(payload);
+        setFeedback({ type: "success", text: "Reserva criada com sucesso." });
+      }
+
+      setIsReservationModalOpen(false);
+      setEditingReservation(null);
+      loadAllData();
+    } catch (error: unknown) {
+      const message = isAxiosError(error)
+        ? error.response?.data?.message || error.response?.data?.error
+        : null;
+      setReservationError(message || "Não foi possível salvar a reserva.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleCancelReservation(id: string) {
     try {
       await reservationService.cancel(id);
@@ -482,6 +584,13 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="table-wrapper">
                 <div className="section-toolbar">
                   <h3>Todas as Reservas do Condomínio</h3>
+                  <button
+                    className="submit-button btn-compact"
+                    onClick={openCreateReservation}
+                    type="button"
+                  >
+                    Nova Reserva
+                  </button>
                 </div>
                 {filteredReservations.length === 0 ? (
                   <p className="empty-message">Nenhuma reserva encontrada.</p>
@@ -521,13 +630,22 @@ export const AdminDashboardPage: React.FC = () => {
                           </td>
                           <td className="table-actions">
                             {res.status === "CONFIRMED" && (
-                              <button
-                                className="btn-table-action"
-                                onClick={() => handleCancelReservation(res.id)}
-                                title="Cancelar Reserva"
-                              >
-                                Cancelar
-                              </button>
+                              <>
+                                <button
+                                  className="btn-table-action"
+                                  onClick={() => openEditReservation(res)}
+                                  title="Editar Reserva"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  className="btn-table-action"
+                                  onClick={() => handleCancelReservation(res.id)}
+                                  title="Cancelar Reserva"
+                                >
+                                  Cancelar
+                                </button>
+                              </>
                             )}
                             <button
                               className="btn-table-delete"
@@ -702,6 +820,114 @@ export const AdminDashboardPage: React.FC = () => {
           </>
         )}
       </main>
+
+      {/* Modal: Reserva (Cria e Edita no mesmo modal) */}
+      {isReservationModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsReservationModalOpen(false)}>
+          <div className="modal-container" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingReservation ? "Editar Reserva" : "Nova Reserva"}</h2>
+              <button
+                className="modal-close-btn"
+                onClick={() => setIsReservationModalOpen(false)}
+                type="button"
+                aria-label="Fechar"
+              >
+                &times;
+              </button>
+            </div>
+            <form onSubmit={handleSaveReservation} className="modal-form">
+              <label htmlFor="reservation-resident">Morador</label>
+              <select
+                id="reservation-resident"
+                value={reservationResidentId}
+                onChange={(event) => setReservationResidentId(event.target.value)}
+                disabled={isSubmitting}
+                required
+              >
+                <option value="">Selecione um morador</option>
+                {residents.map((resident) => (
+                  <option key={resident.id} value={resident.id}>
+                    {resident.fullName} — Bloco {resident.apartment?.block}, Apto {resident.apartment?.number}
+                  </option>
+                ))}
+              </select>
+
+              <label htmlFor="reservation-area">Área de lazer</label>
+              <select
+                id="reservation-area"
+                value={reservationAreaId}
+                onChange={(event) => setReservationAreaId(event.target.value)}
+                disabled={isSubmitting}
+                required
+              >
+                <option value="">Selecione uma área ativa</option>
+                {areas.filter((area) => area.active).map((area) => (
+                  <option key={area.id} value={area.id}>
+                    {area.name}
+                  </option>
+                ))}
+              </select>
+
+              <label htmlFor="reservation-date">Data</label>
+              <input
+                id="reservation-date"
+                type="date"
+                min={getLocalDateInputValue(new Date())}
+                value={reservationDate}
+                onChange={(event) => setReservationDate(event.target.value)}
+                disabled={isSubmitting}
+                required
+              />
+
+              <div className="form-row">
+                <div className="form-col">
+                  <label htmlFor="reservation-start-time">Início</label>
+                  <input
+                    id="reservation-start-time"
+                    type="time"
+                    value={reservationStartTime}
+                    onChange={(event) => setReservationStartTime(event.target.value)}
+                    disabled={isSubmitting}
+                    required
+                  />
+                </div>
+                <div className="form-col">
+                  <label htmlFor="reservation-end-time">Término</label>
+                  <input
+                    id="reservation-end-time"
+                    type="time"
+                    value={reservationEndTime}
+                    onChange={(event) => setReservationEndTime(event.target.value)}
+                    disabled={isSubmitting}
+                    required
+                  />
+                </div>
+              </div>
+
+              {reservationError && (
+                <div className="login-notice error-notice" role="alert">
+                  {reservationError}
+                </div>
+              )}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setIsReservationModalOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className="submit-button" disabled={isSubmitting}>
+                  {isSubmitting ? "Salvando..." : editingReservation ? "Salvar Alterações" : "Criar Reserva"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal: Área de Lazer (Cria e Edita no mesmo modal) */}
       {isAreaModalOpen && (

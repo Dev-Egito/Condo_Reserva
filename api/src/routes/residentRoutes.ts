@@ -33,7 +33,7 @@ residentRoutes.use(roleMiddleware(Role.ADMIN));
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/ResidentRequest'
+ *             $ref: '#/components/schemas/CreateResidentRequest'
  *     responses:
  *       201:
  *         description: Morador cadastrado com sucesso.
